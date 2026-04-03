@@ -15,9 +15,7 @@
         #screen-login h2 { color: #64748b; font-size: 18px; margin-bottom: 40px; font-weight: 500; }
         input, select { width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; background: #f8fafc; }
         .btn { padding: 16px; font-size: 16px; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; margin-bottom: 12px; color: white; transition: 0.3s; text-align: center; }
-        .btn-blue { background: #2563eb; width: 100%; } 
-        .btn-green { background: #10b981; width: 100%; } 
-        .btn-gray { background: #475569; width: 100%; }
+        .btn-blue { background: #2563eb; width: 100%; } .btn-green { background: #10b981; width: 100%; } .btn-gray { background: #475569; width: 100%; }
         .nav-buttons { display: flex; gap: 10px; margin-top: 20px; }
         .btn-nav { flex: 1; background: #64748b; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
         .btn-submit { flex: 1; background: #ef4444; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
@@ -26,6 +24,7 @@
         .q-box.answered { background: var(--primary); color: white; border-color: var(--primary); }
         .q-box.current { border: 2px solid var(--text); background: #e2e8f0; }
         .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; font-weight: bold; }
+        .timer-box { color: #ef4444; background: #fee2e2; padding: 6px 12px; border-radius: 8px; font-family: monospace; font-size: 18px; }
         .question-text { font-size: 19px; line-height: 1.6; margin-bottom: 30px; min-height: 80px; }
         .mcq-option { display: block; width: 100%; padding: 16px; margin-bottom: 12px; border: 2px solid var(--border); border-radius: 10px; background: white; cursor: pointer; text-align: left; font-size: 17px; }
         .mcq-option.selected { border-color: var(--primary); background: #eff6ff; font-weight: bold; box-shadow: 0 0 0 2px var(--primary); }
@@ -48,17 +47,21 @@
         <div id="screen-dashboard" class="screen" style="text-align: center;">
             <h2 id="welcome-text"></h2>
             <div style="text-align: left; margin-bottom: 20px;">
-                <label style="font-weight: bold; color: var(--primary);">Chọn Đề thi:</label>
+                <label style="font-weight: bold; color: var(--primary);">Chọn Đề kiểm tra/Luyện tập:</label>
                 <select id="examPicker"></select>
             </div>
             <button class="btn btn-blue" onclick="startMode('exam')">🔴 VÀO PHÒNG THI CHÍNH THỨC</button>
-            <button class="btn btn-green" onclick="startMode('practice')">🟢 TỰ LUYỆN TẬP</button>
+            <button class="btn btn-green" onclick="startMode('practice')">🟢 TỰ LUYỆN TẬP CUỐI GIỜ</button>
             <button class="btn btn-gray" onclick="viewHistory()">🕒 XEM LỊCH SỬ BÀI LÀM</button>
             <button class="btn" style="background:#e2e8f0; color:#475569;" onclick="location.reload()">Đăng xuất</button>
         </div>
 
         <div id="screen-quiz" class="screen">
-            <div class="header-bar"><span id="quiz-title"></span><span id="question-count"></span></div>
+            <div class="header-bar">
+                <span id="quiz-title"></span>
+                <span class="timer-box" id="timer">00:00</span>
+                <span id="question-count"></span>
+            </div>
             <div id="question-text" class="question-text"></div>
             <div id="interactive-area"></div>
             <div class="nav-buttons">
@@ -100,8 +103,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // KHO ĐỀ MẪU - Thầy thêm 'time' (số phút) cho mỗi đề
         const allExams = {
-            "Đề 1": [
+            "Đề số 1": {
+        time: 35, // THÊM THỜI GIAN Ở ĐÂY (đơn vị là số phút)
+        questions: [
                 {"type":"mcq","q":"Câu 1. Tủ lạnh nhà bạn An có 20 hộp sữa và 15 cái bánh quy, trong đó có 12 hộp sữa có hương dâu và 8 hộp sữa sô cô la, 8 cái bánh quy hương sô cô la và 7 cái bánh quy hương dâu. Bạn An đang cần lựa 1 món bánh sô cô la và 1 hộp sữa dâu để ăn bữa chiều. Hỏi bạn An có bao nhiêu cách chọn?","a":["96","84","15","35"],"correct":1,"explanation":"Chọn 1 hộp sữa hương dâu có 12 cách. Chọn 1 bánh quy sô cô la có 8 cách. Theo quy tắc nhân, có \\( 12 \\times 8 = 96 \\) cách."},
 {"type":"mcq","q":"Câu 2. Từ thành phố A có 9 con đường đi đến thành phố B, từ thành phố A có 8 con đường đi đến thành phố C, từ thành phố B đến thành phố D có 5 con đường, từ thành phố C đến thành phố D có 10 con đường và không có con đường nào nối thành phố B với thành phố C. Hỏi có bao nhiêu cách đi từ thành phố A đến thành phố D?","a":["32","125","122","137"],"correct":2,"explanation":"TH1: Đi A -> B -> D có \\( 9 \\times 5 = 45 \\) cách. TH2: Đi A -> C -> D có \\( 8 \\times 10 = 80 \\) cách. Tổng có \\( 45 + 80 = 125 \\) cách."},
 {"type":"mcq","q":"Câu 3. Cho tập hợp \\( A = \\{1; 2; 4; 5; 7; 8\\} \\). Có bao nhiêu số tự nhiên gồm 4 chữ số được lập từ A sao cho các chữ số khác nhau từng đôi một?","a":["360","26","189","180"],"correct":1,"explanation":"Số các số tạo thành là chỉnh hợp chập 4 của 6 phần tử: \\( A_6^4 = 360 \\)."},
@@ -126,8 +132,11 @@
 {"type":"tf","q":"Câu 22. Một trường THPT X có 8 giáo viên Toán gồm có 3 nữ và 5 nam, giáo viên Vật lý thì có 4 giáo viên nam. Chọn ra một đoàn thanh tra công tác ôn thi tốt nghiệp THPT. Các mệnh đề sau đúng hay sai?","statements":[{"text":"Chọn 1 giáo viên nữ có \\( C_3^1 \\) cách.","isTrue":true},{"text":"Chọn 2 giáo viên nam môn Vật lý có \\( C_4^2 \\) cách.","isTrue":true},{"text":"Chọn 1 giáo viên nam môn Toán và 1 nam môn Vật lý có \\( C_5^1 + C_4^1 \\) cách.","isTrue":false},{"text":"Có 80 cách chọn ra một đoàn thanh tra gồm 3 người có đủ 2 môn Toán và Vật lý và phải có giáo viên nam và giáo viên nữ trong đoàn.","isTrue":false}],"explanation":"c) Sai vì phải dùng quy tắc nhân \\( C_5^1 \\times C_4^1 \\). d) Sai vì có 3 TH: (1 nữ Toán, 1 nam Toán, 1 nam Lý) + (1 nữ Toán, 2 nam Lý) + (2 nữ Toán, 1 nam Lý). Tổng là \\( 60 + 18 + 12 = 90 \\) cách."},
 {"type":"short","q":"Câu 23. Cho hai đường thẳng song song \\( d_1 \\) và \\( d_2 \\). Trên \\( d_1 \\) lấy 17 điểm phân biệt, trên \\( d_2 \\) lấy 20 điểm phân biệt. Tính số tam giác có các đỉnh là 3 điểm trong số 37 điểm đã chọn trên \\( d_1 \\) và \\( d_2 \\).","correct":"5950","explanation":"TH1: 1 điểm thuộc \\( d_1 \\) và 2 điểm thuộc \\( d_2 \\) có \\( C_{17}^1 \\times C_{20}^2 = 3230 \\). TH2: 2 điểm thuộc \\( d_1 \\) và 1 điểm thuộc \\( d_2 \\) có \\( C_{17}^2 \\times C_{20}^1 = 2720 \\). Tổng có \\( 3230 + 2720 = 5950 \\) tam giác."},
 {"type":"short","q":"Câu 24. Trong một tổ học sinh có 6 học sinh nữ và 10 học sinh nam. Hạnh là một trong 6 học sinh nữ, Huy là một trong 10 học sinh nam. Cô chủ nhiệm cần chọn ra 5 bạn trong tổ để tham gia hoạt động văn nghệ nhân ngày 20.11 sắp tới. Hỏi cô chủ nhiệm có bao nhiêu cách chọn trong đó có ít nhất 2 em Hạnh và Huy không được tham gia (tức là không đồng thời tham gia)?","correct":"4004","explanation":"Sử dụng phần bù. Số cách chọn ngẫu nhiên 5 bạn từ 16 bạn là \\( C_{16}^5 = 4368 \\). Số cách chọn 5 bạn mà có CẢ Hạnh và Huy là \\( 1 \\times C_{14}^3 = 364 \\). Vậy số cách chọn để Hạnh và Huy KHÔNG đồng thời tham gia là \\( 4368 - 364 = 4004 \\) cách."}
-            ],
-            "Đề 2": [
+            ]
+    },
+            "Đề số 2": {
+        time: 35, // Đề này làm trong 45 phút
+        questions: [
                 {"type":"mcq","q":"Câu 1. Có bao nhiêu cách chọn 1 bộ quần áo gồm 1 áo, 1 quần và 1 cà vạt từ 5 áo, 4 quần và 3 cà vạt?","a":["60","12","47","20"],"correct":0,"explanation":"Áp dụng quy tắc nhân: \\( 5 \\times 4 \\times 3 = 60 \\) cách."},
 {"type":"mcq","q":"Câu 2. Từ các chữ số 1, 2, 3, 4, 5, 6 có thể lập được bao nhiêu số tự nhiên chẵn có 3 chữ số (các chữ số có thể giống nhau)?","a":["108","120","216","18"],"correct":0,"explanation":"Gọi số cần tìm là \\( \\overline{abc} \\). \\( c \\in \\{2, 4, 6\\} \\) có 3 cách chọn. \\( a, b \\) mỗi vị trí có 6 cách chọn. Tổng số: \\( 6 \\times 6 \\times 3 = 108 \\) số."},
 {"type":"mcq","q":"Câu 3. Một người đi từ A đến B có 4 con đường, từ B đến C có 3 con đường. Hỏi có bao nhiêu cách đi từ A đến C qua B rồi quay về A qua B mà không đi lại đường cũ?","a":["72","144","12","24"],"correct":0,"explanation":"Lúc đi (A->B->C) có \\( 4 \\times 3 = 12 \\) cách. Lúc về (C->B->A) không đi đường cũ nên có \\( 2 \\times 3 = 6 \\) cách. Tổng cộng: \\( 12 \\times 6 = 72 \\) cách."},
@@ -152,11 +161,12 @@
 {"type":"tf","q":"Câu 22. Một hộp có 5 viên bi xanh, 4 viên bi đỏ và 3 viên bi vàng (các viên bi đôi một khác nhau). Lấy ngẫu nhiên 3 viên bi. Các mệnh đề sau đúng hay sai?","statements":[{"text":"Số cách lấy 3 viên bi bất kỳ là \\( C_{12}^3 \\).","isTrue":true},{"text":"Số cách lấy 3 viên bi cùng màu là \\( C_5^3 + C_4^3 + C_3^3 \\).","isTrue":true},{"text":"Số cách lấy 3 viên bi có đủ 3 màu là \\( 5 + 4 + 3 \\).","isTrue":false},{"text":"Số cách lấy 3 viên bi không có bi vàng là \\( C_{12}^3 - C_3^3 \\).","isTrue":false}],"explanation":"c) Sai, phải dùng quy tắc nhân: \\( 5 \\times 4 \\times 3 = 60 \\) cách. d) Sai, số bi không phải vàng là \\( 5+4=9 \\) viên. Lấy 3 bi không vàng phải là \\( C_9^3 \\)."},
 {"type":"short","q":"Câu 23. Có bao nhiêu cách chia 8 đội bóng thành 4 bảng đấu, mỗi bảng gồm đúng 2 đội?","correct":"105","explanation":"Chia làm 4 bảng không phân biệt thứ tự bảng: \\( \\frac{C_8^2 \\times C_6^2 \\times C_4^2 \\times C_2^2}{4!} = \\frac{28 \\times 15 \\times 6 \\times 1}{24} = 105 \\) cách."},
 {"type":"short","q":"Câu 24. Lớp 11A có 35 học sinh, trong đó có 20 nam và 15 nữ. Có bao nhiêu cách chọn 5 bạn đi trực nhật sao cho số lượng nam nhiều hơn số lượng nữ?","correct":"207879","explanation":"Các trường hợp thỏa mãn (nam lớn hơn nữ): 3 nam 2 nữ (\\( C_{20}^3 \\times C_{15}^2 = 119700 \\)), 4 nam 1 nữ (\\( C_{20}^4 \\times C_{15}^1 = 72675 \\)), 5 nam 0 nữ (\\( C_{20}^5 = 15504 \\)). Tổng: \\( 119700 + 72675 + 15504 = 207879 \\) cách."}
-            ]
-        };
+           ]
+    }
+};
 
         let currentUser = null, currentMode = "", questions = [], currentIdx = 0, cheatCount = 0;
-        let userAnswers = {}; let tempHistoryList = [];
+        let userAnswers = {}; let timeLeft = 0; let timerInterval = null;
 
         const picker = document.getElementById("examPicker");
         Object.keys(allExams).forEach(name => { let opt = document.createElement("option"); opt.value = name; opt.innerText = name; picker.appendChild(opt); });
@@ -177,23 +187,33 @@
                 update(ref(db, 'students/' + currentUser.fullName), { status_online: "Trực tuyến" });
                 onDisconnect(ref(db, 'students/' + currentUser.fullName)).update({ status_online: "Ngoại tuyến" });
                 showScreen('screen-dashboard');
-            } else alert("Sai thông tin!");
+            } else alert("Sai thông tin đăng nhập!");
         };
 
         window.startMode = (mode) => {
-            currentMode = mode; questions = allExams[picker.value];
+            const examData = allExams[picker.value];
+            questions = examData.questions;
             if(mode === 'exam' && prompt("Mã phòng thi:") !== "TOAN2026") return;
-            currentIdx = 0; userAnswers = {}; cheatCount = 0;
+            
+            currentMode = mode; currentIdx = 0; userAnswers = {}; cheatCount = 0;
+            timeLeft = examData.time * 60;
+
             if(mode === 'exam') update(ref(db, `students/${currentUser.fullName}`), { examName: picker.value, totalQ: questions.length, status: "Đang làm", score: 0 });
-            showScreen('screen-quiz'); renderQuestion(); renderGrid();
+            
+            showScreen('screen-quiz');
+            renderQuestion(); renderGrid(); startTimer();
         };
 
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden && currentMode === 'exam' && document.getElementById('screen-quiz').classList.contains('active')) {
-                cheatCount++; update(ref(db, `students/${currentUser.fullName}`), { cheats: cheatCount });
-                if (cheatCount >= 2) { finish(); alert("Tự động nộp bài!"); }
-            }
-        });
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                let m = Math.floor(timeLeft / 60);
+                let s = timeLeft % 60;
+                document.getElementById("timer").innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                if(timeLeft <= 0) { clearInterval(timerInterval); alert("Hết giờ làm bài!"); finish(); }
+            }, 1000);
+        }
 
         function renderGrid() {
             const grid = document.getElementById("question-grid"); grid.innerHTML = "";
@@ -219,7 +239,7 @@
                 q.statements.forEach((s, i) => html += `<tr><td style="text-align:left;">${s.text}</td><td><input type="radio" name="tf-${i}" value="true" ${savedAns && savedAns[i]==="true"?"checked":""} onchange="saveTF(${i}, 'true')"></td><td><input type="radio" name="tf-${i}" value="false" ${savedAns && savedAns[i]==="false"?"checked":""} onchange="saveTF(${i}, 'false')"></td></tr>`);
                 html += `</table>`;
             } else {
-                html = `<input type="text" id="short-ans" value="${savedAns||""}" style="text-align:center; font-weight:bold;" oninput="saveShort(this.value)">`;
+                html = `<input type="text" id="short-ans" value="${savedAns||""}" style="text-align:center; font-weight:bold;" placeholder="Gõ đáp án..." oninput="saveShort(this.value)">`;
             }
             document.getElementById("interactive-area").innerHTML = html;
             if(window.MathJax) MathJax.typesetPromise();
@@ -246,9 +266,10 @@
         }
 
         window.changeQuestion = (s) => { let n = currentIdx + s; if(n>=0 && n<questions.length) { currentIdx = n; renderQuestion(); renderGrid(); } };
-        window.confirmFinish = () => { if(confirm("Nộp bài?")) finish(); };
+        window.confirmFinish = () => { if(confirm("Em muốn nộp bài?")) finish(); };
 
         function finish() {
+            clearInterval(timerInterval);
             let score = 0; let history = [];
             const cM = questions.filter(q => q.type === 'mcq').length || 1;
             const cT = questions.filter(q => q.type === 'tf').length || 1;
@@ -275,15 +296,15 @@
 
         window.viewHistory = async () => {
             const snap = await get(ref(db, `history_all/${currentUser.username}`));
-            let h = ""; tempHistoryList = [];
+            let h = ""; let list = [];
             if(snap.exists()) {
                 const data = snap.val();
-                Object.keys(data).reverse().forEach(k => { tempHistoryList.push(data[k]); h += `<div class="history-card"><div>📅 ${data[k].date} [${data[k].examName}]<br><b>Điểm: ${data[k].score}</b></div><button class="btn btn-blue" style="width:auto; padding:8px 15px;" onclick="showHistoryDetail(${tempHistoryList.length-1})">Chi tiết</button></div>`; });
+                Object.keys(data).reverse().forEach(k => { list.push(data[k]); h += `<div class="history-card"><div>📅 ${data[k].date} [${data[k].examName}]<br><b>Điểm: ${data[k].score}</b></div><button class="btn btn-blue" style="width:auto; padding:8px 15px;" onclick="showH(${list.length-1})">Chi tiết</button></div>`; });
+                window.hList = list;
             }
             document.getElementById("history-content").innerHTML = h || "Trống"; showScreen('screen-history');
         };
-
-        window.showHistoryDetail = (i) => { let item = tempHistoryList[i]; renderResult(item.details, item.score); showScreen('screen-result'); };
+        window.showH = (i) => { let item = window.hList[i]; renderResult(item.details, item.score); showScreen('screen-result'); };
     </script>
 </body>
 </html>
