@@ -2,56 +2,89 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>HỆ THỐNG GIÁM SÁT & QUẢN LÝ - THẦY HÙNG ANH</title>
+    <title>QUẢN LÝ GIÁO VIÊN - THẦY HÙNG ANH</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root { --primary: #2563eb; --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; }
         body { font-family: Arial, sans-serif; padding: 20px; background: var(--bg); color: var(--text); margin: 0; }
-        h1 { color: #60a5fa; text-align: center; margin-bottom: 5px; font-size: 24px; }
-        .dashboard { max-width: 1200px; margin: 0 auto; background: var(--panel); padding: 25px; border-radius: 12px; border-top: 5px solid var(--primary); margin-bottom: 20px; }
-        .account-box { background: #334155; padding: 20px; border-radius: 8px; border-left: 5px solid #10b981; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        input { padding: 10px; border-radius: 6px; border: 1px solid #64748b; background: #0f172a; color: white; }
-        button { padding: 10px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; background: #10b981; color: white; }
-        button:hover { background: #059669; }
-        table { width: 100%; border-collapse: collapse; background: white; color: black; border-radius: 8px; margin-top: 20px; }
+        .dashboard { max-width: 1200px; margin: 0 auto 30px auto; background: var(--panel); padding: 25px; border-radius: 12px; border-top: 5px solid var(--primary); }
+        h2 { color: #60a5fa; margin-top: 0; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; color: black; border-radius: 8px; overflow: hidden; margin-top: 15px; }
         th, td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
-        th { background: var(--primary); color: white; }
-        .detail-card { background: #334155; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #3b82f6; display: none; }
+        th { background: var(--primary); color: white; font-size: 14px; }
+        
+        .account-form { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input { padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; }
+        .btn-add { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        
+        .status-on { color: #10b981; font-weight: bold; }
+        .status-off { color: #94a3b8; font-style: italic; }
+
+        .icon-v { color: #16a34a; font-weight: bold; }
+        .icon-x { color: #dc2626; font-weight: bold; }
+        
+        .detail-view { background: #334155; padding: 20px; border-radius: 12px; display: none; margin-top: 20px; border-left: 5px solid #3b82f6; }
+        .detail-table { background: #1e293b; color: white; }
+        .detail-table td { color: white; border: 1px solid #475569; }
+        .del-res-btn { color: #f87171; background: none; border: 1px solid #f87171; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+        
+        /* Hiệu ứng khi rê chuột vào ô thống kê */
+        .stats-cell:hover { background-color: #fee2e2; cursor: pointer; }
     </style>
 </head>
 <body>
+
     <div class="dashboard">
-        <h2 style="margin-top:0; color:#10b981;">👨‍🏫 QUẢN LÝ TÀI KHOẢN HỌC SINH</h2>
-        <div class="account-box">
-            <input type="text" id="accUsername" placeholder="Tên đăng nhập (VD: HS01)">
-            <input type="text" id="accPassword" placeholder="Mật khẩu (VD: 1234)">
-            <input type="text" id="accFullName" placeholder="Họ và tên thật (VD: Nguyễn Văn A)" style="width: 250px;">
-            <button onclick="createAccount()">+ TẠO / CẬP NHẬT TÀI KHOẢN</button>
+        <h2>🔑 QUẢN LÝ TÀI KHOẢN HỌC SINH</h2>
+        <div class="account-form">
+            <input type="text" id="accUser" placeholder="Tên đăng nhập">
+            <input type="text" id="accPass" placeholder="Mật khẩu">
+            <input type="text" id="accName" placeholder="Họ tên thật" style="width:200px;">
+            <button class="btn-add" onclick="createAcc()">TẠO TÀI KHOẢN</button>
         </div>
-        <p id="accMsg" style="color:#4ade80; font-size:14px; display:none;">Đã tạo tài khoản thành công!</p>
+        <div style="max-height: 250px; overflow-y: auto;">
+            <table>
+                <thead><tr><th>Tên đăng nhập</th><th>Mật khẩu</th><th>Họ và Tên</th><th>Hành động</th></tr></thead>
+                <tbody id="accBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <div class="dashboard">
-        <h2 style="margin-top:0; color:#60a5fa;">📊 MA TRẬN PHÒNG THI CHÍNH THỨC</h2>
-        <p id="conn-status" style="color: #94a3b8; font-size: 14px;">Đang kết nối...</p>
+        <h2>📊 THỐNG KÊ TỈ LỆ SAI TỪNG CÂU</h2>
+        <table id="statsTable">
+            <thead><tr id="statsHead"></tr></thead>
+            <tbody id="statsBody"></tbody>
+        </table>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">* Bấm vào ô số lượng em sai để xem danh sách chi tiết.</p>
+    </div>
+
+    <div class="dashboard">
+        <h2>📝 MA TRẬN KẾT QUẢ & TRẠNG THÁI</h2>
         <div style="overflow-x: auto;">
-            <table id="studentTable">
-                <thead id="tableHead"></thead>
-                <tbody id="tableBody"></tbody>
+            <table>
+                <thead id="hRow"></thead>
+                <tbody id="bRow"></tbody>
             </table>
         </div>
-        
-        <div class="detail-card" id="detailView">
-            <h3 id="detailTitle" style="color: #93c5fd; margin-top:0;">🔍 CHI TIẾT BÀI LÀM</h3>
-            <table style="width:100%; background:#1e293b; color:white;">
-                <thead style="background:#475569;"><tr><th>Câu</th><th>Học sinh điền</th><th>Đáp án chuẩn</th></tr></thead>
-                <tbody id="detailBody"></tbody>
-            </table>
+
+        <div class="detail-view" id="detailSection">
+            <h3 id="detailTitle" style="color:#93c5fd; margin-top:0;"></h3>
+            <div id="detailContent">
+                <table class="detail-table">
+                    <thead><tr><th>Câu</th><th>Đáp án của học sinh</th><th>Đáp án chính xác</th></tr></thead>
+                    <tbody id="detailInnerBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB79zEH0-xkYJ9mfxghaEDzNQowlhx0MXE",
@@ -62,71 +95,101 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let globalData = null;
+        let sData = {};
+        let wrongStudentsMap = []; // Biến lưu danh sách học sinh sai từng câu
 
-        // TẠO TÀI KHOẢN
-        window.createAccount = () => {
-            const user = document.getElementById("accUsername").value.trim().toLowerCase();
-            const pass = document.getElementById("accPassword").value.trim();
-            const name = document.getElementById("accFullName").value.trim();
-            
-            if(!user || !pass || !name) return alert("Thầy vui lòng điền đủ 3 ô thông tin!");
-            
-            set(ref(db, 'accounts/' + user), { password: pass, fullName: name })
-            .then(() => {
-                const msg = document.getElementById("accMsg");
-                msg.style.display = "block";
-                setTimeout(() => msg.style.display = "none", 3000);
-                document.getElementById("accUsername").value = "";
-                document.getElementById("accPassword").value = "";
-                document.getElementById("accFullName").value = "";
-            });
+        window.createAcc = () => {
+            const u = document.getElementById("accUser").value.trim().toLowerCase();
+            const p = document.getElementById("accPass").value.trim();
+            const n = document.getElementById("accName").value.trim();
+            if(u) set(ref(db, 'accounts/' + u), { password: p, fullName: n });
         };
+        window.delAcc = (u) => { if(confirm("Xoá tài khoản?")) remove(ref(db, 'accounts/' + u)); };
+        window.delRes = (n) => { if(confirm("Xoá bài làm?")) remove(ref(db, 'students/' + n)); };
 
-        // HIỂN THỊ MA TRẬN THI (Giữ nguyên như cũ)
-        onValue(ref(db, 'students'), (snapshot) => {
-            globalData = snapshot.val();
-            document.getElementById("conn-status").innerText = "Kết nối ổn định 🟢";
-            const thead = document.getElementById("tableHead"), tbody = document.getElementById("tableBody");
-            
-            if (!globalData) return tbody.innerHTML = "<tr><td style='padding:20px;'>Chưa có thí sinh...</td></tr>";
-
-            let maxQ = 0;
-            Object.values(globalData).forEach(s => { if (s.totalQ > maxQ) maxQ = s.totalQ; });
-            
-            let h = `<tr><th style="min-width:150px;">Họ tên (Bấm để xem)</th><th>Điểm</th>`;
-            for(let i=1; i<=maxQ; i++) h += `<th>C${i}</th>`;
-            thead.innerHTML = h + `</tr>`;
-
-            tbody.innerHTML = "";
-            Object.keys(globalData).forEach(name => {
-                const info = globalData[name];
-                let row = `<tr>
-                    <td style="text-align:left; font-weight:bold; color:#1d4ed8; cursor:pointer;" onclick="viewDetail('${name}')">${name} <br><span style="font-size:11px; color:#64748b;">${info.status}</span></td>
-                    <td><b>${info.status === 'Đang làm' ? '...' : info.score}</b></td>`;
-                const ans = info.detailAnswers || [];
-                for(let i=0; i<maxQ; i++) {
-                    if (i < ans.length) {
-                        let e = ans[i].earned;
-                        row += `<td style="color:${e>=1?'green':(e===0?'red':'orange')}; font-weight:bold;">${e>=1?'✔':(e===0?'✘':'O')}</td>`;
-                    } else row += `<td style="color:#cbd5e1">...</td>`;
-                }
-                tbody.innerHTML += row + `</tr>`;
-            });
+        onValue(ref(db, 'accounts'), (s) => {
+            let h = ""; const d = s.val();
+            if(d) Object.keys(d).forEach(u => h += `<tr><td>${u}</td><td>${d[u].password}</td><td>${d[u].fullName}</td><td><button class="btn-delete" onclick="delAcc('${u}')">Xoá</button></td></tr>`);
+            document.getElementById("accBody").innerHTML = h;
         });
 
-        window.viewDetail = (name) => {
-            if (!globalData || !globalData[name] || !globalData[name].detailAnswers) return alert("Chưa có dữ liệu bài làm!");
-            const s = globalData[name];
-            document.getElementById("detailView").style.display = "block";
-            document.getElementById("detailTitle").innerText = `🔍 BÀI LÀM: ${name}`;
+        onValue(ref(db, 'students'), (s) => {
+            sData = s.val(); if(!sData) return;
+            let maxQ = 0; Object.values(sData).forEach(st => { if(st.totalQ > maxQ) maxQ = st.totalQ; });
+            
+            // Khởi tạo lại bản đồ học sinh sai
+            wrongStudentsMap = Array.from({length: maxQ}, () => []);
+
+            let h = `<tr><th>Thí sinh</th><th>Hoạt động</th><th>Điểm</th>`;
+            for(let i=1; i<=maxQ; i++) h += `<th>C${i}</th>`;
+            h += `<th>Cảnh báo</th><th>Xoá</th></tr>`;
+            document.getElementById("hRow").innerHTML = h;
+
             let b = "";
-            s.detailAnswers.forEach((ans, i) => {
-                let color = ans.earned >= 1 ? "#4ade80" : "#f87171";
-                b += `<tr><td style="text-align:center;">Câu ${i+1}</td><td style="color:${color}; text-align:center;">${ans.sAns}</td><td style="color:#4ade80; text-align:center;">${ans.cAns}</td></tr>`;
+            Object.keys(sData).forEach(name => {
+                const st = sData[name];
+                const online = st.status_online === "Trực tuyến" ? "<span class='status-on'>🟢 Online</span>" : "<span class='status-off'>🔴 Offline</span>";
+                const warning = st.cheats > 0 ? `<b style="color:red;">${st.cheats} lần</b>` : "-";
+                
+                b += `<tr><td style="color:blue; cursor:pointer; text-align:left;" onclick="viewDetail('${name}')">${name}</td><td>${online}</td><td><b>${st.score}</b></td>`;
+                const ans = st.detailAnswers || [];
+                for(let i=0; i<maxQ; i++) {
+                    if(i < ans.length) {
+                        const isCorrect = ans[i].earned >= 1;
+                        b += `<td style="color:${isCorrect?'green':'red'}">${isCorrect?'✔':'✘'}</td>`;
+                        if(!isCorrect) wrongStudentsMap[i].push(name);
+                    }
+                    else b += `<td>-</td>`;
+                }
+                b += `<td>${warning}</td><td><button class="del-res-btn" onclick="delRes('${name}')">Xoá</button></td></tr>`;
             });
-            document.getElementById("detailBody").innerHTML = b;
-            document.getElementById("detailView").scrollIntoView({ behavior: 'smooth' });
+            document.getElementById("bRow").innerHTML = b;
+
+            // Cập nhật thống kê sai
+            let sh = ""; let sb = "";
+            for(let i=1; i<=maxQ; i++) sh += `<th>Câu ${i}</th>`;
+            for(let i=0; i<maxQ; i++) {
+                sb += `<td class="stats-cell" style="color:red; font-weight:bold;" onclick="viewWrongList(${i})">${wrongStudentsMap[i].length} em sai</td>`;
+            }
+            document.getElementById("statsHead").innerHTML = `<tr>${sh}</tr>`;
+            document.getElementById("statsBody").innerHTML = `<tr>${sb}</tr>`;
+        });
+
+        // Xem chi tiết từng học sinh
+        window.viewDetail = (name) => {
+            const st = sData[name];
+            if(!st || !st.detailAnswers) return;
+            document.getElementById("detailSection").style.display = "block";
+            document.getElementById("detailTitle").innerText = `CHI TIẾT BÀI LÀM: ${name}`;
+            
+            let h = `<table class="detail-table"><thead><tr><th>Câu</th><th>Trò điền</th><th>Đáp án chuẩn</th></tr></thead><tbody>`;
+            st.detailAnswers.forEach((a, i) => h += `<tr><td>Câu ${i+1}</td><td>${a.sAns}</td><td style="color:green">${a.cAns}</td></tr>`);
+            h += `</tbody></table>`;
+            
+            document.getElementById("detailContent").innerHTML = h;
+            if(window.MathJax) MathJax.typesetPromise();
+            document.getElementById("detailSection").scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // Xem danh sách học sinh sai một câu cụ thể
+        window.viewWrongList = (qIdx) => {
+            const names = wrongStudentsMap[qIdx];
+            document.getElementById("detailSection").style.display = "block";
+            document.getElementById("detailTitle").innerText = `DANH SÁCH HỌC SINH SAI CÂU ${qIdx + 1}`;
+            
+            let h = "";
+            if (names.length > 0) {
+                h = `<div style="text-align:left; padding:15px; color:white; background:#1e293b; border-radius:8px;">`;
+                h += `<p style="margin-bottom:10px; border-bottom:1px solid #475569; padding-bottom:5px;">Tổng cộng: <b>${names.length} học sinh</b></p>`;
+                h += `<ol style="padding-left:20px;">`;
+                names.forEach(n => h += `<li style="margin-bottom:5px;">${n}</li>`);
+                h += `</ol></div>`;
+            } else {
+                h = `<div style="padding:20px; text-align:center; color:#10b981; font-weight:bold;">Chúc mừng! Không có học sinh nào sai câu này.</div>`;
+            }
+            
+            document.getElementById("detailContent").innerHTML = h;
+            document.getElementById("detailSection").scrollIntoView({ behavior: 'smooth' });
         };
     </script>
 </body>
