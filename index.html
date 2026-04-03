@@ -12,7 +12,6 @@
         .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); width: 100%; max-width: 750px; border-top: 8px solid var(--primary); margin-top: 20px; }
         .screen { display: none; } .active { display: block; }
         
-        /* Màn hình Login đẹp */
         #screen-login h1 { color: var(--primary); margin-bottom: 5px; font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
         #screen-login h2 { color: #64748b; font-size: 18px; margin-bottom: 40px; font-weight: 500; }
         
@@ -23,7 +22,6 @@
         .btn-green { background: #10b981; width: 100%; } 
         .btn-gray { background: #475569; width: 100%; }
         
-        /* Điều hướng */
         .nav-buttons { display: flex; gap: 10px; margin-top: 20px; }
         .btn-nav { flex: 1; background: #64748b; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
         .btn-submit { flex: 1; background: #ef4444; color: white; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
@@ -42,6 +40,7 @@
         .tf-table th, .tf-table td { border: 1px solid var(--border); padding: 12px; text-align: center; }
         .review-box { text-align: left; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 25px; margin-bottom: 20px; }
         .explanation-box { background: #dcfce7; border-left: 5px solid #16a34a; padding: 15px; margin-top: 15px; border-radius: 0 8px 8px 0; font-size: 15px; }
+        .history-card { border: 1px solid var(--border); padding: 18px; border-radius: 10px; margin-bottom: 15px; background: white; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -57,7 +56,7 @@
         <div id="screen-dashboard" class="screen" style="text-align: center;">
             <h2 id="welcome-text"></h2>
             <div style="text-align: left; margin-bottom: 20px;">
-                <label style="font-weight: bold; color: var(--primary);">Chọn Đề kiểm tra:</label>
+                <label style="font-weight: bold; color: var(--primary);">Chọn Đề kiểm tra/Luyện tập:</label>
                 <select id="examPicker"></select>
             </div>
             <button class="btn btn-blue" onclick="startMode('exam')">🔴 VÀO PHÒNG THI CHÍNH THỨC</button>
@@ -80,13 +79,19 @@
         </div>
 
         <div id="screen-result" class="screen">
-            <h2 style="text-align:center; color:#16a34a;">✓ HOÀN THÀNH</h2>
+            <h2 id="res-head" style="text-align:center; color:#16a34a;">✓ HOÀN THÀNH</h2>
             <div style="text-align:center; background:#f8fafc; border:2px dashed var(--primary); padding:25px; border-radius:15px; margin:25px 0;">
-                <p>Điểm của em:</p>
+                <p>Điểm của em (Thang 10):</p>
                 <strong id="score-text" style="font-size:50px; color:var(--primary);"></strong>
             </div>
             <div id="review-area"></div>
             <button class="btn btn-blue" onclick="showScreen('screen-dashboard')">TRỞ VỀ MENU CHÍNH</button>
+        </div>
+
+        <div id="screen-history" class="screen">
+            <h2 style="color:var(--primary); text-align:left;">Lịch sử bài làm</h2>
+            <div id="history-content"></div>
+            <button class="btn btn-gray" onclick="showScreen('screen-dashboard')">QUAY LẠI</button>
         </div>
     </div>
 
@@ -104,20 +109,21 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // KHO ĐỀ MẪU 3 DẠNG
+        // KHO ĐỀ MẪU ĐA DẠNG (Thầy thêm đề tại đây)
         const allExams = {
-            "Đề 01 - Trắc nghiệm 4 lựa chọn": [
-                { type: "mcq", q: "Câu 1. Tủ lạnh nhà bạn An có 20 hộp sữa...", a: ["96", "84", "15", "35"], correct: 0, explanation: "Áp dụng quy tắc nhân." }
+            "Đề số 1": [
+                { type: "mcq", q: "Tính đạo hàm \\( y = e^{2x} \\):", a: ["\\( e^{2x} \\)", "\\( 2e^{2x} \\)", "Khác"], correct: 1, explanation: "\\( (e^u)' = u'e^u \\)." }
             ],
-            "Đề 02 - Tổng hợp 3 dạng": [
-                { type: "mcq", q: "Câu 1. Đạo hàm hàm số \\( y = e^{2x} \\) là:", a: ["\\( e^{2x} \\)", "\\( 2e^{2x} \\)", "\\( \\frac{1}{2}e^{2x} \\)", "Khác"], correct: 1, explanation: "Công thức \\( (e^u)' = u' e^u \\)." },
-                { type: "tf", q: "Câu 2. Cho hàm số \\( y = x^2 \\). Các mệnh đề sau đúng hay sai?", statements: [{text: "Hàm số đồng biến trên R", isTrue: false}, {text: "Hàm số có cực tiểu tại x=0", isTrue: true}], explanation: "Hàm đồng biến khi x > 0." },
-                { type: "short", q: "Câu 3. Tìm m để đồ thị đi qua gốc tọa độ?", correct: "0", explanation: "Thay (0,0) vào phương trình." }
+            "Đề số 2": [
+                { type: "mcq", q: "Tìm x biết \\( x + 1 = 2 \\)", a: ["0", "1", "2"], correct: 1, explanation: "Phép cộng cơ bản." },
+                { type: "tf", q: "Hàm số \\( y = x^2 \\) là hàm số chẵn?", statements: [{text: "Đúng", isTrue: true}, {text: "Sai", isTrue: false}], explanation: "\\( f(-x)=f(x) \\)." },
+                { type: "short", q: "Căn bậc hai của 9 là?", correct: "3", explanation: "3x3=9" }
             ]
         };
 
         let currentUser = null, currentMode = "", questions = [], currentIdx = 0, cheatCount = 0;
         let userAnswers = {}; 
+        let tempHistoryList = []; // Biến tạm lưu lịch sử để tránh lỗi JSON
 
         const picker = document.getElementById("examPicker");
         Object.keys(allExams).forEach(name => {
@@ -140,7 +146,7 @@
                 update(ref(db, 'students/' + currentUser.fullName), { status_online: "Trực tuyến" });
                 onDisconnect(ref(db, 'students/' + currentUser.fullName)).update({ status_online: "Ngoại tuyến" });
                 showScreen('screen-dashboard');
-            } else alert("Sai tài khoản!");
+            } else alert("Sai thông tin đăng nhập!");
         };
 
         window.startMode = (mode) => {
@@ -148,12 +154,8 @@
             questions = allExams[picker.value];
             if(mode === 'exam' && prompt("Mã phòng thi:") !== "TOAN2026") return;
             currentIdx = 0; userAnswers = {}; cheatCount = 0;
-            
-            // Gửi thông tin tổng số câu lên để Giáo viên vẽ bảng
-            if(mode === 'exam') {
-                update(ref(db, `students/${currentUser.fullName}`), { examName: picker.value, totalQ: questions.length, status: "Đang làm", score: 0 });
-            }
-            
+            // Khởi tạo trạng thái đề cho Giáo viên
+            if(mode === 'exam') update(ref(db, `students/${currentUser.fullName}`), { examName: picker.value, totalQ: questions.length, status: "Đang làm", score: 0 });
             showScreen('screen-quiz');
             renderQuestion();
             renderGrid();
@@ -163,7 +165,7 @@
             if (document.hidden && currentMode === 'exam' && document.getElementById('screen-quiz').classList.contains('active')) {
                 cheatCount++;
                 update(ref(db, `students/${currentUser.fullName}`), { cheats: cheatCount });
-                if (cheatCount >= 2) { finish(); alert("Bạn thoát tab quá 2 lần. Hệ thống tự động nộp bài!"); }
+                if (cheatCount >= 2) { finish(); alert("Tự động nộp bài do thoát tab!"); }
                 else alert(`Cảnh báo lần ${cheatCount}/2: Không được thoát tab!`);
             }
         });
@@ -214,42 +216,38 @@
             if(window.MathJax) MathJax.typesetPromise();
         }
 
-        window.saveAns = (i) => { userAnswers[currentIdx] = i; syncData(); renderQuestion(); renderGrid(); };
-        window.saveShort = (val) => { userAnswers[currentIdx] = val.trim(); syncData(); renderGrid(); };
+        window.saveAns = (i) => { userAnswers[currentIdx] = i; syncToTeacher(); renderQuestion(); renderGrid(); };
+        window.saveShort = (val) => { userAnswers[currentIdx] = val.trim(); syncToTeacher(); renderGrid(); };
         window.saveTF = (stIdx, val) => {
             if (!userAnswers[currentIdx]) userAnswers[currentIdx] = {};
             userAnswers[currentIdx][stIdx] = val;
-            syncData(); renderGrid();
+            syncToTeacher(); renderGrid();
         };
 
-        // Gửi dữ liệu tạm thời về cho Giáo viên
-        function syncData() {
+        // Gửi kết quả tạm thời cho Giáo viên
+        function syncToTeacher() {
             if (currentMode !== 'exam') return;
             let currentScore = 0;
-            let historyTemp = [];
-            
-            const countMCQ = questions.filter(i => i.type === 'mcq').length || 1;
-            const countTF = questions.filter(i => i.type === 'tf').length || 1;
-            const countShort = questions.filter(i => i.type === 'short').length || 1;
+            let tempDetails = [];
+            const countMCQ = questions.filter(q => q.type === 'mcq').length || 1;
+            const countTF = questions.filter(q => q.type === 'tf').length || 1;
+            const countShort = questions.filter(q => q.type === 'short').length || 1;
 
             questions.forEach((q, i) => {
                 let earned = 0;
-                const userVal = userAnswers[i];
-                if (q.type === "mcq") {
-                    if (userVal === q.correct) earned = 5 / countMCQ;
-                } else if (q.type === "tf") {
+                const uVal = userAnswers[i];
+                if (q.type === "mcq" && uVal === q.correct) earned = 5 / countMCQ;
+                else if (q.type === "tf") {
                     let cp = 0;
-                    q.statements.forEach((st, sIdx) => {
-                        if (userVal && userVal[sIdx] === st.isTrue.toString()) cp++;
-                    });
+                    q.statements.forEach((st, sIdx) => { if (uVal && uVal[sIdx] === st.isTrue.toString()) cp++; });
                     earned = (cp / q.statements.length) * (3 / countTF);
-                } else {
-                    if (userVal && userVal.toLowerCase() === q.correct.toLowerCase()) earned = 2 / countShort;
+                } else if (q.type === "short" && uVal && uVal.toLowerCase() === q.correct.toLowerCase()) {
+                    earned = 2 / countShort;
                 }
                 currentScore += earned;
-                historyTemp.push({ earned, sAns: userVal || "Chưa làm" });
+                tempDetails.push({ earned, sAns: uVal || "?" });
             });
-            update(ref(db, `students/${currentUser.fullName}`), { score: currentScore.toFixed(2), detailAnswers: historyTemp });
+            update(ref(db, `students/${currentUser.fullName}`), { score: currentScore.toFixed(2), detailAnswers: tempDetails });
         }
 
         window.changeQuestion = (step) => {
@@ -257,13 +255,10 @@
             if (next >= 0 && next < questions.length) { currentIdx = next; renderQuestion(); renderGrid(); }
         };
 
-        window.confirmFinish = () => {
-            if (confirm("Em chắc chắn muốn nộp bài?")) finish();
-        };
+        window.confirmFinish = () => { if (confirm("Em chắc chắn muốn nộp bài?")) finish(); };
 
         function finish() {
-            let totalRaw = 0;
-            let historyArr = [];
+            let rawScore = 0, historyArr = [];
             const countMCQ = questions.filter(i => i.type === 'mcq').length || 1;
             const countTF = questions.filter(i => i.type === 'tf').length || 1;
             const countShort = questions.filter(i => i.type === 'short').length || 1;
@@ -273,7 +268,7 @@
                 const userVal = userAnswers[i];
                 if (q.type === "mcq") {
                     cAnsText = q.a[q.correct];
-                    if (userVal !== undefined) { sAnsText = q.a[userVal]; if (userVal === q.correct) earned = 5 / countMCQ; }
+                    if (userVal !== undefined) { sAnsText = q.a[userVal]; if (userVal === q.correct) earned = 5/countMCQ; }
                     else sAnsText = "Chưa làm";
                 } else if (q.type === "tf") {
                     let cp = 0, saArr = [], caArr = [];
@@ -283,27 +278,64 @@
                         saArr.push(uVal ? (uVal === "true" ? "Đ" : "S") : "_");
                         caArr.push(st.isTrue ? "Đ" : "S");
                     });
-                    earned = (cp / q.statements.length) * (3 / countTF);
+                    earned = (cp / q.statements.length) * (3/countTF);
                     sAnsText = saArr.join("|"); cAnsText = caArr.join("|");
                 } else {
-                    cAnsText = q.correct;
-                    sAnsText = userVal || "Chưa làm";
-                    if (sAnsText.toLowerCase() === q.correct.toLowerCase()) earned = 2 / countShort;
+                    cAnsText = q.correct; sAnsText = userVal || "Chưa làm";
+                    if (sAnsText.toLowerCase() === q.correct.toLowerCase()) earned = 2/countShort;
                 }
-                totalRaw += earned;
+                rawScore += earned;
                 historyArr.push({ qText: q.q, sAns: sAnsText, cAns: cAnsText, earned, explanation: q.explanation });
             });
 
-            const finalScore = parseFloat(totalRaw.toFixed(2));
-            update(ref(db, `students/${currentUser.fullName}`), { score: finalScore, status: "Xong", detailAnswers: historyArr });
-            push(ref(db, `history_all/${currentUser.username}`), { date: new Date().toLocaleString(), score: finalScore, details: historyArr, examName: picker.value });
-
-            document.getElementById("score-text").innerText = finalScore;
-            let h = "";
-            historyArr.forEach((item, i) => h += `<div class="review-box"><b>Câu ${i+1}:</b> ${item.qText}<br>Em chọn: <b style="color:${item.earned>0?'green':'red'}">${item.sAns}</b> | Đáp án: <b>${item.cAns}</b><div class="explanation-box">${item.explanation}</div></div>`);
-            document.getElementById("review-area").innerHTML = h;
+            const finalScore = parseFloat(rawScore.toFixed(2));
+            const log = { date: new Date().toLocaleString(), score: finalScore, details: historyArr, examName: picker.value, mode: currentMode };
+            
+            if (currentMode === 'exam') update(ref(db, `students/${currentUser.fullName}`), { status: "Xong", score: finalScore });
+            push(ref(db, `history_all/${currentUser.username}`), log);
+            
+            renderResultPage(historyArr, finalScore, "KẾT QUẢ VỪA LÀM");
             showScreen('screen-result');
         }
+
+        function renderResultPage(historyArr, scoreVal, title) {
+            document.getElementById("res-head").innerText = title;
+            document.getElementById("score-text").innerText = scoreVal;
+            let h = "";
+            historyArr.forEach((item, i) => {
+                h += `<div class="review-box">
+                    <p><b>Câu ${i+1}:</b> ${item.qText}</p>
+                    <p>Em chọn: <b style="color:${item.earned>0?'green':'red'}">${item.sAns}</b> | Đáp án: <b>${item.cAns}</b></p>
+                    <div class="explanation-box"><b>📖 Lời giải:</b><br>${item.explanation}</div>
+                </div>`;
+            });
+            document.getElementById("review-area").innerHTML = h;
+            if(window.MathJax) MathJax.typesetPromise();
+        }
+
+        window.viewHistory = async () => {
+            const snap = await get(ref(db, `history_all/${currentUser.username}`));
+            let h = ""; tempHistoryList = [];
+            if(snap.exists()) {
+                const data = snap.val();
+                Object.keys(data).reverse().forEach((key) => {
+                    const item = data[key];
+                    tempHistoryList.push(item);
+                    h += `<div class="history-card">
+                        <div>📅 ${item.date} [${item.examName}]<br><b>Điểm: ${item.score}/10</b></div>
+                        <button class="btn btn-blue" style="width:auto; padding:8px 15px; margin:0;" onclick="showHistoryDetail(${tempHistoryList.length - 1})">Chi tiết</button>
+                    </div>`;
+                });
+            } else h = "Chưa có dữ liệu lịch sử.";
+            document.getElementById("history-content").innerHTML = h;
+            showScreen('screen-history');
+        };
+
+        window.showHistoryDetail = (index) => {
+            const item = tempHistoryList[index];
+            renderResultPage(item.details, item.score, "CHI TIẾT LỊCH SỬ");
+            showScreen('screen-result');
+        };
     </script>
 </body>
 </html>
