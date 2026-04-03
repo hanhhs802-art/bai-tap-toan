@@ -8,39 +8,70 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --text: #0f172a; --border: #cbd5e1; }
-        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         .container { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 750px; border-top: 6px solid var(--primary); margin-top: 20px; }
+        h2 { margin-top: 0; color: var(--primary); font-size: 24px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; color: #475569; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 14px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 10px; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        
         .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; font-weight: bold; }
-        .mcq-option { display: block; width: 100%; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: pointer; text-align: left; }
+        .question-title { font-size: 18px; line-height: 1.6; margin-bottom: 25px; }
+        .mcq-option { display: block; width: 100%; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 16px; transition: 0.2s; }
+        .mcq-option:hover { background: #f1f5f9; }
         .mcq-option.selected { border-color: var(--primary); background: #eff6ff; font-weight: bold; }
+        
         .tf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .tf-table th, .tf-table td { border: 1px solid var(--border); padding: 12px; text-align: center; }
-        .short-answer-input { width: 100%; max-width: 300px; text-align: center; font-size: 18px; font-weight: bold; padding: 10px; }
-        .review-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .explanation-box { background: #dcfce7; border-left: 4px solid #16a34a; padding: 15px; margin-top: 15px; border-radius: 0 8px 8px 0; }
+        .tf-table td.statement { text-align: left; width: 70%; }
+        .tf-radio { transform: scale(1.5); cursor: pointer; }
+        
+        .short-answer-input { width: 100%; max-width: 300px; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); padding: 10px; }
+
+        .review-box { text-align: left; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .explanation-box { background: #dcfce7; border-left: 4px solid #16a34a; padding: 15px; margin-top: 15px; border-radius: 0 8px 8px 0; font-size: 15px; }
+
         #quiz-screen, #result-screen { display: none; }
     </style>
 </head>
 <body>
+
     <div class="container">
         <div id="login-screen" style="text-align: center;">
             <h2>LeHoang Education</h2>
-            <input type="text" id="studentName" placeholder="Họ và Tên" style="width:100%; padding:14px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
-            <input type="password" id="accessCode" placeholder="Mã phòng thi" style="width:100%; padding:14px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+            <p style="color: #64748b; margin-bottom: 30px;">Hệ thống kiểm tra năng lực môn Toán</p>
+            <div class="form-group">
+                <label>Họ và Tên học sinh</label>
+                <input type="text" id="studentName" placeholder="Ví dụ: Nguyễn Văn A">
+            </div>
+            <div class="form-group">
+                <label>Mã phòng thi</label>
+                <input type="password" id="accessCode" placeholder="Nhập mã do giáo viên cung cấp">
+            </div>
             <button class="btn-primary" onclick="startQuiz()">VÀO PHÒNG THI</button>
         </div>
 
         <div id="quiz-screen">
-            <div class="header-bar"><span id="display-name"></span><span id="question-count"></span></div>
-            <div id="question-text" style="font-size:18px; margin-bottom:20px;"></div>
-            <div id="interactive-area"></div>
-            <button class="btn-primary" onclick="submitAnswer()" id="btn-next">TIẾP THEO</button>
+            <div class="header-bar">
+                <span id="display-name" style="color: var(--primary);"></span>
+                <span id="question-count" style="background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></span>
+            </div>
+            <div id="question-text" class="question-title"></div>
+            <div id="interactive-area" style="margin-bottom: 30px;"></div>
+            <button class="btn-primary" onclick="submitAnswer()" id="btn-next">CÂU TIẾP THEO ➔</button>
         </div>
 
-        <div id="result-screen">
-            <h2 style="text-align:center; color:#16a34a;">ĐÃ NỘP BÀI</h2>
-            <div id="score-display" style="text-align:center; font-size:30px; font-weight:bold; margin-bottom:20px;"></div>
+        <div id="result-screen" style="text-align: center;">
+            <h2 style="color: #16a34a; font-size: 32px;">✓ ĐÃ NỘP BÀI</h2>
+            <p style="font-size: 18px; margin-top: 20px;">Học sinh: <strong id="result-name"></strong></p>
+            <div style="background: white; border: 2px dashed var(--primary); padding: 30px; border-radius: 12px; margin: 30px 0;">
+                <p style="margin: 0; color: #64748b; font-size: 16px;">Tổng điểm đạt được:</p>
+                <strong id="score-text" style="color: var(--primary); font-size: 48px;"></strong>
+            </div>
+            <h3 style="text-align: left; border-bottom: 2px solid var(--border); padding-bottom: 10px;">ĐÁP ÁN & LỜI GIẢI</h3>
             <div id="review-area"></div>
         </div>
     </div>
@@ -49,94 +80,179 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // THẦY DÁN THÊM databaseURL CỦA THẦY VÀO ĐÂY NHÉ
         const firebaseConfig = {
             apiKey: "AIzaSyB79zEH0-xkYJ9mfxghaEDzNQowlhx0MXE",
             authDomain: "phamhunganhquiz.firebaseapp.com",
             databaseURL: "https://phamhunganhquiz-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "phamhunganhquiz",
             storageBucket: "phamhunganhquiz.firebasestorage.app",
+            messagingSenderId: "948379693019",
             appId: "1:948379693019:web:a9acf119254d237018c1fe"
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        const CORRECT_PASSCODE = "TOAN2026";
+
         const questions = [
-            { type: "mcq", q: "Đạo hàm của \\( y = e^{2x} \\) là:", a: ["e^{2x}", "2e^{2x}", "1/2e^{2x}", "2xe^{2x}"], correct: 1, explanation: "Công thức (e^u)' = u'.e^u" },
-            { type: "tf", q: "Hàm số \\( y = x^3 - 3x \\):", statements: [{text: "Đồng biến trên (1; +∞)", isTrue: true}, {text: "Cực đại tại x=1", isTrue: false}], explanation: "y' = 3x^2-3, dương trên (1; +∞)" },
-            { type: "short", q: "Giá trị lớn nhất của \\( y = -x^2 + 4x + 1 \\):", correct: "5", explanation: "Đỉnh Parabol tại x=2, y=5" }
+            { 
+                type: "mcq",
+                q: "Tính đạo hàm của hàm số \\( y = e^{2x} \\).", 
+                a: ["A. \\( y' = e^{2x} \\)", "B. \\( y' = 2e^{2x} \\)", "C. \\( y' = \\frac{1}{2}e^{2x} \\)", "D. \\( y' = 2xe^{2x} \\)"], 
+                correct: 1,
+                explanation: "Dùng công thức \\( (e^u)' = u' \\cdot e^u \\)."
+            },
+            {
+                type: "tf",
+                q: "Cho hàm số \\( y = x^3 - 3x + 2 \\). Mệnh đề sau đúng hay sai?",
+                statements: [
+                    { text: "Hàm số đồng biến trên khoảng \\( (1; +\\infty) \\).", isTrue: true },
+                    { text: "Hàm số đạt cực đại tại \\( x = 1 \\).", isTrue: false }
+                ],
+                explanation: "\\( y' = 3x^2 - 3 \\). Lập BBT để kết luận."
+            },
+            {
+                type: "short",
+                q: "Tìm giá trị lớn nhất của hàm số \\( f(x) = -x^2 + 4x + 1 \\).",
+                correct: "5",
+                explanation: "Đỉnh parabol \\( x = 2 \\), thay vào ta được \\( f(2) = 5 \\)."
+            }
         ];
 
         let currentQ = 0, score = 0, studentName = "", selectedMcq = null, studentHistory = [];
 
         window.startQuiz = () => {
             studentName = document.getElementById("studentName").value.trim();
-            if(!studentName || document.getElementById("accessCode").value !== "TOAN2026") return alert("Thông tin sai!");
-            set(ref(db, 'students/' + studentName), { status: "Đang làm", question: 1, score: 0, totalQ: questions.length, detailAnswers: [] });
-            onDisconnect(ref(db, 'students/' + studentName)).update({ status: "Thoát" });
+            const code = document.getElementById("accessCode").value.trim();
+            if (!studentName) return alert("Em vui lòng nhập Họ và Tên!");
+            if (code !== CORRECT_PASSCODE) return alert("Mã phòng thi không chính xác!");
+            
+            const studentRef = ref(db, 'students/' + studentName);
+            set(studentRef, { status: "Đang làm", question: 1, cheats: 0, score: 0, totalQ: questions.length, detailAnswers: [] });
+            onDisconnect(studentRef).update({ status: "Mất mạng/Thoát" });
+
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("quiz-screen").style.display = "block";
+            document.getElementById("display-name").innerText = `Thí sinh: ${studentName}`;
             renderQuestion();
         };
 
         function renderQuestion() {
-            const q = questions[currentQ];
-            document.getElementById("question-count").innerText = `Câu ${currentQ+1}/${questions.length}`;
-            document.getElementById("question-text").innerHTML = q.q;
+            const qData = questions[currentQ];
+            document.getElementById("question-count").innerText = `Câu ${currentQ + 1}/${questions.length}`;
+            document.getElementById("question-text").innerHTML = qData.q;
+            
             let html = "";
-            if(q.type === "mcq") q.a.forEach((ans, i) => html += `<button class="mcq-option" id="mcq-${i}" onclick="selectedMcq=${i}; document.querySelectorAll('.mcq-option').forEach(b=>b.classList.remove('selected')); document.getElementById('mcq-${i}').classList.add('selected')">${ans}</button>`);
-            else if(q.type === "tf") {
-                html += `<table class="tf-table"><tr><th>Mệnh đề</th><th>Đ</th><th>S</th></tr>`;
-                q.statements.forEach((s, i) => html += `<tr><td>${s.text}</td><td><input type="radio" name="tf-${i}" value="true"></td><td><input type="radio" name="tf-${i}" value="false"></td></tr>`);
-                html += `</table>`;
-            } else html = `<input type="text" id="short-ans" class="short-answer-input">`;
-            document.getElementById("interactive-area").innerHTML = html;
-            if(window.MathJax) MathJax.typesetPromise();
-        }
-
-        window.submitAnswer = () => {
-            const q = questions[currentQ];
-            let earned = 0, studentAnsText = "", correctAnsText = "";
-
-            if(q.type === "mcq") {
-                if(selectedMcq === null) return;
-                studentAnsText = q.a[selectedMcq];
-                correctAnsText = q.a[q.correct];
-                if(selectedMcq === q.correct) earned = 1;
-            } else if(q.type === "tf") {
-                let correctParts = 0, sAns = [], cAns = [];
-                q.statements.forEach((s, i) => {
-                    const sel = document.querySelector(`input[name="tf-${i}"]:checked`)?.value;
-                    if(sel === s.isTrue.toString()) correctParts++;
-                    sAns.push(sel === "true" ? "Đ" : "S");
-                    cAns.push(s.isTrue ? "Đ" : "S");
+            if (qData.type === "mcq") {
+                selectedMcq = null;
+                qData.a.forEach((ans, i) => {
+                    html += `<button class="mcq-option" id="mcq-${i}" onclick="selectMcq(${i})">${ans}</button>`;
                 });
-                earned = correctParts * 0.25;
-                studentAnsText = sAns.join(", ");
-                correctAnsText = cAns.join(", ");
-            } else {
-                studentAnsText = document.getElementById("short-ans").value.trim();
-                correctAnsText = q.correct;
-                if(studentAnsText.toLowerCase() === q.correct.toLowerCase()) earned = 1;
+            } else if (qData.type === "tf") {
+                html += `<table class="tf-table"><tr><th>Phát biểu</th><th>Đúng</th><th>Sai</th></tr>`;
+                qData.statements.forEach((stmt, i) => {
+                    html += `<tr><td class="statement">${stmt.text}</td>
+                             <td><input type="radio" name="tf-${i}" value="true" class="tf-radio"></td>
+                             <td><input type="radio" name="tf-${i}" value="false" class="tf-radio"></td></tr>`;
+                });
+                html += `</table>`;
+            } else if (qData.type === "short") {
+                html += `<div style="text-align: center; margin-top: 20px;">
+                            <input type="text" id="short-answer" class="short-answer-input" placeholder="Nhập đáp án...">
+                         </div>`;
             }
 
-            score += earned;
-            studentHistory.push({ sAns: studentAnsText, cAns: correctAnsText, earned: earned });
-            update(ref(db, 'students/' + studentName), { score: score, question: currentQ + 1, detailAnswers: studentHistory });
+            document.getElementById("interactive-area").innerHTML = html;
             
-            currentQ++;
-            if(currentQ < questions.length) renderQuestion();
-            else finish();
+            if (currentQ === questions.length - 1) {
+                document.getElementById("btn-next").innerText = "NỘP BÀI TỔNG KẾT";
+                document.getElementById("btn-next").style.backgroundColor = "#16a34a";
+            }
+            if (window.MathJax) MathJax.typesetPromise();
+            update(ref(db, 'students/' + studentName), { question: currentQ + 1 });
+        }
+
+        window.selectMcq = (index) => {
+            selectedMcq = index;
+            document.querySelectorAll('.mcq-option').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById(`mcq-${index}`).classList.add('selected');
         };
 
-        function finish() {
-            update(ref(db, 'students/' + studentName), { status: "Xong" });
+        window.submitAnswer = () => {
+            const qData = questions[currentQ];
+            let isAnswered = false;
+            let earned = 0;
+            let studentAnsText = "";
+            let correctAnsText = "";
+
+            if (qData.type === "mcq") {
+                if (selectedMcq === null) return alert("Em chưa chọn đáp án!");
+                studentAnsText = qData.a[selectedMcq];
+                correctAnsText = qData.a[qData.correct];
+                if (selectedMcq === qData.correct) earned = 1;
+                isAnswered = true;
+            } 
+            else if (qData.type === "tf") {
+                let allChecked = true, correctParts = 0, sAnsArr = [], cAnsArr = [];
+                qData.statements.forEach((stmt, i) => {
+                    const checkedNode = document.querySelector(`input[name="tf-${i}"]:checked`);
+                    if (!checkedNode) {
+                        allChecked = false;
+                    } else {
+                        if (checkedNode.value === stmt.isTrue.toString()) correctParts++;
+                        sAnsArr.push(checkedNode.value === "true" ? "Đúng" : "Sai");
+                    }
+                    cAnsArr.push(stmt.isTrue ? "Đúng" : "Sai");
+                });
+                if (!allChecked) return alert("Em phải chọn Đúng/Sai cho TẤT CẢ các phát biểu!");
+                
+                earned = correctParts * 0.25;
+                studentAnsText = sAnsArr.join(" | ");
+                correctAnsText = cAnsArr.join(" | ");
+                isAnswered = true;
+            } 
+            else if (qData.type === "short") {
+                const studentAns = document.getElementById("short-answer").value.trim();
+                if (studentAns === "") return alert("Em chưa nhập đáp án!");
+                studentAnsText = studentAns;
+                correctAnsText = qData.correct;
+                if (studentAns.toLowerCase() === qData.correct.toLowerCase()) earned = 1;
+                isAnswered = true;
+            }
+
+            if (isAnswered) {
+                score += earned;
+                studentHistory.push({ sAns: studentAnsText, cAns: correctAnsText, earned: earned });
+                update(ref(db, 'students/' + studentName), { score: score, detailAnswers: studentHistory });
+                
+                currentQ++;
+                if (currentQ < questions.length) renderQuestion();
+                else finishQuiz();
+            }
+        };
+
+        function finishQuiz() {
+            update(ref(db, 'students/' + studentName), { status: "Hoàn thành" });
             document.getElementById("quiz-screen").style.display = "none";
             document.getElementById("result-screen").style.display = "block";
-            document.getElementById("score-display").innerText = `Điểm: ${score}`;
-            let h = "";
-            questions.forEach((q, i) => h += `<div class="review-box"><b>Câu ${i+1}:</b> ${q.q}<br>Đã chọn: ${studentHistory[i].sAns}<br>Đáp án: ${studentHistory[i].cAns}<div class="explanation-box">${q.explanation}</div></div>`);
-            document.getElementById("review-area").innerHTML = h;
-            if(window.MathJax) MathJax.typesetPromise();
+            document.getElementById("result-name").innerText = studentName;
+            document.getElementById("score-text").innerText = score;
+            
+            let reviewHtml = "";
+            questions.forEach((q, i) => {
+                let tag = studentHistory[i].earned >= 1 ? `<span style="color:green;font-weight:bold;">✔ Làm đúng</span>` : `<span style="color:red;font-weight:bold;">✘ Làm sai</span>`;
+                reviewHtml += `
+                <div class="review-box">
+                    <p><strong>Câu ${i + 1}:</strong> ${q.q}</p>
+                    <p>Kết quả: ${tag}</p>
+                    <p>Em đã chọn: <b>${studentHistory[i].sAns}</b></p>
+                    <p>Đáp án đúng: <b style="color:green;">${studentHistory[i].cAns}</b></p>
+                    <div class="explanation-box"><strong>📖 Lời giải:</strong><br>${q.explanation}</div>
+                </div>`;
+            });
+            document.getElementById("review-area").innerHTML = reviewHtml;
+            if (window.MathJax) MathJax.typesetPromise();
         }
     </script>
 </body>

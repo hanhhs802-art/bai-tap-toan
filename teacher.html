@@ -2,27 +2,50 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>GIÁM SÁT - THẦY HÙNG ANH</title>
+    <title>HỆ THỐNG GIÁM SÁT - THẦY HÙNG ANH</title>
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
-        .dashboard { max-width: 1100px; margin: auto; background: #1e293b; padding: 25px; border-radius: 12px; }
-        table { width: 100%; border-collapse: collapse; background: white; color: black; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background: #2563eb; color: white; }
-        .right { color: green; font-weight: bold; }
-        .wrong { color: red; font-weight: bold; }
-        .detail-card { background: #334155; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #2563eb; }
+        :root { --primary: #2563eb; --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; }
+        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; background: var(--bg); color: var(--text); margin: 0; }
+        h1 { color: #60a5fa; text-align: center; margin-bottom: 5px; font-size: 26px; }
+        .header-sub { text-align: center; color: #94a3b8; margin-bottom: 20px; font-size: 14px; }
+        .dashboard { max-width: 1200px; margin: 0 auto; background: var(--panel); padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-top: 5px solid var(--primary); }
+        
+        table { width: 100%; border-collapse: collapse; background: white; color: black; border-radius: 8px; overflow: hidden; font-size: 15px; margin-bottom: 20px; }
+        th, td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
+        th { background: var(--primary); color: white; font-weight: bold; }
+        .student-name { text-align: left; font-weight: bold; padding-left: 15px; color: #1d4ed8; cursor: pointer; text-decoration: underline; }
+        .student-name:hover { color: #2563eb; background-color: #f1f5f9; }
+        
+        .icon-right { color: #16a34a; font-weight: bold; }
+        .icon-wrong { color: #dc2626; font-weight: bold; }
+        
+        /* Bảng chi tiết */
+        .detail-card { background: #334155; padding: 20px; border-radius: 8px; border-left: 5px solid #3b82f6; display: none; }
+        .detail-card h3 { margin-top: 0; color: #93c5fd; }
+        .detail-table th { background: #475569; color: white; }
+        .detail-table td, .detail-table th { border: 1px solid #64748b; color: white; background: #1e293b; }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <h1>📊 TIẾN ĐỘ THI THỜI GIAN THỰC</h1>
-        <div id="status">Kết nối...</div>
-        <table id="matrixTable"><thead><tr id="hRow"></tr></thead><tbody id="bRow"></tbody></table>
+        <h1>MA TRẬN & CHI TIẾT BÀI LÀM</h1>
+        <div class="header-sub" id="conn-status">Đang tải dữ liệu...</div>
+        
+        <div style="overflow-x: auto;">
+            <table id="studentTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
 
         <div class="detail-card" id="detailView">
-            <h3>🔍 CHI TIẾT BÀI LÀM (Bấm vào tên học sinh để xem)</h3>
-            <div id="detailContent">Hãy chọn một học sinh để xem chi tiết đáp án...</div>
+            <h3 id="detailTitle">🔍 Bấm vào tên học sinh ở bảng trên để xem chi tiết...</h3>
+            <table class="detail-table" id="detailTable" style="display: none;">
+                <thead>
+                    <tr><th>Câu</th><th>Học sinh điền</th><th>Đáp án chuẩn</th><th>Kết quả</th></tr>
+                </thead>
+                <tbody id="detailBody"></tbody>
+            </table>
         </div>
     </div>
 
@@ -30,52 +53,104 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // THẦY DÁN THÊM databaseURL CỦA THẦY VÀO ĐÂY NHÉ
         const firebaseConfig = {
             apiKey: "AIzaSyB79zEH0-xkYJ9mfxghaEDzNQowlhx0MXE",
             authDomain: "phamhunganhquiz.firebaseapp.com",
             databaseURL: "https://phamhunganhquiz-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "phamhunganhquiz",
+            storageBucket: "phamhunganhquiz.firebasestorage.app",
+            messagingSenderId: "948379693019",
             appId: "1:948379693019:web:a9acf119254d237018c1fe"
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        onValue(ref(db, 'students'), (snap) => {
-            const data = snap.val();
-            if(!data) return;
-            document.getElementById("status").innerText = "Đang kết nối 🟢";
+        // Biến toàn cục để lưu dữ liệu hiển thị chi tiết
+        let globalData = null;
+
+        onValue(ref(db, 'students'), (snapshot) => {
+            globalData = snapshot.val();
+            document.getElementById("conn-status").innerText = `Cập nhật: ${new Date().toLocaleTimeString()} - Kết nối 🟢`;
             
+            const thead = document.getElementById("tableHead");
+            const tbody = document.getElementById("tableBody");
+            
+            if (!globalData) {
+                thead.innerHTML = "";
+                tbody.innerHTML = "<tr><td style='padding: 40px;'>Chưa có thí sinh nào vào phòng thi...</td></tr>";
+                return;
+            }
+
             let maxQ = 0;
-            Object.values(data).forEach(s => if(s.totalQ > maxQ) maxQ = s.totalQ);
-
-            let h = `<th>Thí sinh</th><th>Điểm</th>`;
-            for(let i=1; i<=maxQ; i++) h += `<th>C${i}</th>`;
-            document.getElementById("hRow").innerHTML = h;
-
-            let b = "";
-            Object.keys(data).forEach(name => {
-                const s = data[name];
-                b += `<tr><td style="cursor:pointer; color:blue;" onclick="view('${name}')">${name}</td><td><b>${s.score}</b></td>`;
-                for(let i=0; i<maxQ; i++) {
-                    const ans = s.detailAnswers ? s.detailAnswers[i] : null;
-                    if(!ans) b += `<td>-</td>`;
-                    else b += `<td class="${ans.earned >= 1 ? 'right' : 'wrong'}">${ans.earned >= 1 ? '✔' : '✘'}</td>`;
-                }
-                b += `</tr>`;
+            // SỬA LỖI Ở ĐÂY: Thêm ngoặc nhọn { } cho vòng lặp
+            Object.values(globalData).forEach(s => {
+                if (s.totalQ > maxQ) maxQ = s.totalQ;
             });
-            document.getElementById("bRow").innerHTML = b;
+            
+            let headerHtml = `<tr>
+                <th style="min-width: 150px;">Họ và Tên (Bấm để xem)</th>
+                <th>Tổng Điểm</th>`;
+            for(let i=1; i<=maxQ; i++) { headerHtml += `<th>C${i}</th>`; }
+            headerHtml += `</tr>`;
+            thead.innerHTML = headerHtml;
 
-            // Hàm xem chi tiết
-            window.view = (name) => {
-                const s = data[name];
-                let html = `<b>Học sinh: ${name}</b><table style="margin-top:10px;"><tr><th>Câu</th><th>Trò điền</th><th>Đáp án đúng</th></tr>`;
-                s.detailAnswers.forEach((a, i) => {
-                    html += `<tr><td>${i+1}</td><td>${a.sAns}</td><td style="color:green">${a.cAns}</td></tr>`;
-                });
-                html += `</table>`;
-                document.getElementById("detailContent").innerHTML = html;
-            };
+            tbody.innerHTML = "";
+            Object.keys(globalData).forEach(name => {
+                const info = globalData[name];
+                let scoreHtml = info.status === 'Đang làm' ? 'Đang thi...' : `<b>${info.score}</b>`;
+                
+                // Sự kiện onclick gọi hàm viewDetail
+                let row = `<tr>
+                    <td class="student-name" onclick="viewDetail('${name}')">${name} <br><span style="font-size:11px; font-weight:normal; color:#64748b;">${info.status}</span></td>
+                    <td>${scoreHtml}</td>`;
+                
+                const ans = info.detailAnswers || [];
+                for(let i=0; i<maxQ; i++) {
+                    if (i < ans.length) {
+                        let earned = ans[i].earned;
+                        if (earned >= 1) row += `<td><span class="icon-right">✔</span></td>`;
+                        else if (earned === 0) row += `<td><span class="icon-wrong">✘</span></td>`;
+                        else row += `<td><span style="color:#d97706;font-weight:bold;">O</span></td>`; // Đúng 1 phần
+                    } else {
+                        row += `<td style="color:#cbd5e1">...</td>`;
+                    }
+                }
+                row += `</tr>`;
+                tbody.innerHTML += row;
+            });
         });
+
+        // Hàm hiển thị chi tiết bài làm
+        window.viewDetail = (name) => {
+            if (!globalData || !globalData[name] || !globalData[name].detailAnswers) {
+                alert("Học sinh này chưa trả lời câu nào!");
+                return;
+            }
+            
+            const studentInfo = globalData[name];
+            document.getElementById("detailView").style.display = "block";
+            document.getElementById("detailTitle").innerText = `🔍 BÀI LÀM CHI TIẾT: ${name} (Điểm: ${studentInfo.score})`;
+            document.getElementById("detailTable").style.display = "table";
+            
+            let tbody = "";
+            studentInfo.detailAnswers.forEach((ans, index) => {
+                let statusIcon = ans.earned >= 1 ? "✔" : (ans.earned === 0 ? "✘" : "O");
+                let statusColor = ans.earned >= 1 ? "#4ade80" : (ans.earned === 0 ? "#f87171" : "#fbbf24");
+                
+                tbody += `<tr>
+                    <td>Câu ${index + 1}</td>
+                    <td style="color:#e2e8f0;">${ans.sAns}</td>
+                    <td style="color:#4ade80; font-weight:bold;">${ans.cAns}</td>
+                    <td style="color:${statusColor}; font-weight:bold;">${statusIcon}</td>
+                </tr>`;
+            });
+            
+            document.getElementById("detailBody").innerHTML = tbody;
+            
+            // Tự động cuộn màn hình xuống bảng chi tiết
+            document.getElementById("detailView").scrollIntoView({ behavior: 'smooth' });
+        };
     </script>
 </body>
 </html>
