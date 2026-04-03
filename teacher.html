@@ -2,54 +2,27 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>HỆ THỐNG GIÁM SÁT - THẦY HÙNG ANH</title>
+    <title>GIÁM SÁT - THẦY HÙNG ANH</title>
     <style>
-        :root { --primary: #2563eb; --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; }
-        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 20px; background: var(--bg); color: var(--text); margin: 0; }
-        h1 { color: #60a5fa; text-align: center; margin-bottom: 5px; font-size: 26px; }
-        .header-sub { text-align: center; color: #94a3b8; margin-bottom: 20px; font-size: 14px; }
-        
-        .dashboard { max-width: 1200px; margin: 0 auto; background: var(--panel); padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-top: 5px solid var(--primary); }
-        
-        /* Box thống kê câu sai */
-        .stats-box { background: #334155; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #ef4444; }
-        .stats-box h3 { margin-top: 0; color: #fca5a5; font-size: 16px; margin-bottom: 10px;}
-        .top-missed { display: flex; gap: 15px; flex-wrap: wrap; }
-        .miss-item { background: #1e293b; padding: 8px 15px; border-radius: 20px; font-size: 14px; border: 1px solid #475569; }
-        .miss-item strong { color: #f87171; }
-
-        table { width: 100%; border-collapse: collapse; background: white; color: black; border-radius: 8px; overflow: hidden; font-size: 14px; }
-        th, td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
-        th { background: var(--primary); color: white; font-weight: bold; }
-        td.student-name { text-align: left; font-weight: bold; padding-left: 15px; }
-        
-        .warning { color: #dc2626; font-weight: bold; }
-        .done { color: #64748b; font-style: italic; }
-        .score-badge { font-weight: bold; color: #1d4ed8; font-size: 16px; }
-        
-        /* Icons cho ma trận */
-        .icon-right { color: #16a34a; font-size: 16px; }
-        .icon-wrong { color: #dc2626; font-size: 16px; }
-        .icon-partial { color: #d97706; font-size: 16px; }
-        .icon-pending { color: #cbd5e1; font-size: 12px; }
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; }
+        .dashboard { max-width: 1100px; margin: auto; background: #1e293b; padding: 25px; border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; background: white; color: black; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background: #2563eb; color: white; }
+        .right { color: green; font-weight: bold; }
+        .wrong { color: red; font-weight: bold; }
+        .detail-card { background: #334155; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #2563eb; }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <h1>MA TRẬN KẾT QUẢ THI TRỰC TUYẾN</h1>
-        <div class="header-sub" id="conn-status">Đang tải dữ liệu...</div>
-        
-        <div class="stats-box" id="analysis-box" style="display: none;">
-            <h3>📊 Thống kê: Các câu học sinh sai nhiều nhất</h3>
-            <div class="top-missed" id="top-missed-content"></div>
-        </div>
-        
-        <div style="overflow-x: auto;">
-            <table id="studentTable">
-                <thead id="tableHead">
-                    </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+        <h1>📊 TIẾN ĐỘ THI THỜI GIAN THỰC</h1>
+        <div id="status">Kết nối...</div>
+        <table id="matrixTable"><thead><tr id="hRow"></tr></thead><tbody id="bRow"></tbody></table>
+
+        <div class="detail-card" id="detailView">
+            <h3>🔍 CHI TIẾT BÀI LÀM (Bấm vào tên học sinh để xem)</h3>
+            <div id="detailContent">Hãy chọn một học sinh để xem chi tiết đáp án...</div>
         </div>
     </div>
 
@@ -62,100 +35,46 @@
             authDomain: "phamhunganhquiz.firebaseapp.com",
             databaseURL: "https://phamhunganhquiz-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "phamhunganhquiz",
-            storageBucket: "phamhunganhquiz.firebasestorage.app",
-            messagingSenderId: "948379693019",
             appId: "1:948379693019:web:a9acf119254d237018c1fe"
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        onValue(ref(db, 'students'), (snapshot) => {
-            const data = snapshot.val();
-            document.getElementById("conn-status").innerText = `Cập nhật: ${new Date().toLocaleTimeString()} - Kết nối 🟢`;
+        onValue(ref(db, 'students'), (snap) => {
+            const data = snap.val();
+            if(!data) return;
+            document.getElementById("status").innerText = "Đang kết nối 🟢";
             
-            const thead = document.getElementById("tableHead");
-            const tbody = document.getElementById("tableBody");
-            
-            if (!data) {
-                thead.innerHTML = "";
-                tbody.innerHTML = "<tr><td style='padding: 40px;'>Chưa có dữ liệu thí sinh...</td></tr>";
-                document.getElementById("analysis-box").style.display = "none";
-                return;
-            }
-
-            // 1. Tìm số câu hỏi lớn nhất để tạo số cột
             let maxQ = 0;
-            Object.values(data).forEach(s => { if(s.totalQ > maxQ) maxQ = s.totalQ; });
-            
-            // 2. Tạo Tiêu đề Bảng (Header)
-            let headerHtml = `<tr>
-                <th style="min-width: 150px;">Họ và Tên</th>
-                <th>Cảnh báo</th>
-                <th>Tổng Điểm</th>`;
-            for(let i=1; i<=maxQ; i++) { headerHtml += `<th>C${i}</th>`; }
-            headerHtml += `</tr>`;
-            thead.innerHTML = headerHtml;
+            Object.values(data).forEach(s => if(s.totalQ > maxQ) maxQ = s.totalQ);
 
-            // 3. Đổ dữ liệu Ma trận & Thống kê câu sai
-            tbody.innerHTML = "";
-            let missCount = {}; // Lưu trữ: { "Câu 1": 5 lỗi, "Câu 2": 2 lỗi... }
-            for(let i=0; i<maxQ; i++) missCount[i] = 0;
+            let h = `<th>Thí sinh</th><th>Điểm</th>`;
+            for(let i=1; i<=maxQ; i++) h += `<th>C${i}</th>`;
+            document.getElementById("hRow").innerHTML = h;
 
+            let b = "";
             Object.keys(data).forEach(name => {
-                const info = data[name];
-                let cheatHtml = info.cheats > 0 ? `<span class="warning">${info.cheats} lần</span>` : `-`;
-                let scoreHtml = info.status === 'Đang làm' ? 'Đang thi...' : `<span class="score-badge">${info.score}</span>`;
-                
-                let row = `<tr>
-                    <td class="student-name">${name} <br><span style="font-size:11px; font-weight:normal; color:#64748b;">${info.status}</span></td>
-                    <td>${cheatHtml}</td>
-                    <td>${scoreHtml}</td>`;
-                
-                // Duyệt qua từng câu hỏi của học sinh đó
-                const ans = info.answers || [];
+                const s = data[name];
+                b += `<tr><td style="cursor:pointer; color:blue;" onclick="view('${name}')">${name}</td><td><b>${s.score}</b></td>`;
                 for(let i=0; i<maxQ; i++) {
-                    if (i < ans.length) {
-                        let st = ans[i];
-                        if (st === 1) {
-                            row += `<td><span class="icon-right">✔</span></td>`;
-                        } else if (st === 0) {
-                            row += `<td><span class="icon-wrong">✘</span></td>`;
-                            missCount[i]++; // Tăng bộ đếm câu sai
-                        } else {
-                            row += `<td><span class="icon-partial">O</span></td>`; // Đúng 1 phần
-                            missCount[i] += 0.5;
-                        }
-                    } else {
-                        // Chưa làm tới
-                        row += `<td><span class="icon-pending">...</span></td>`;
-                    }
+                    const ans = s.detailAnswers ? s.detailAnswers[i] : null;
+                    if(!ans) b += `<td>-</td>`;
+                    else b += `<td class="${ans.earned >= 1 ? 'right' : 'wrong'}">${ans.earned >= 1 ? '✔' : '✘'}</td>`;
                 }
-                row += `</tr>`;
-                tbody.innerHTML += row;
+                b += `</tr>`;
             });
+            document.getElementById("bRow").innerHTML = b;
 
-            // 4. Xử lý logic Thống kê câu sai nhiều nhất
-            document.getElementById("analysis-box").style.display = "block";
-            let statsHtml = "";
-            
-            // Chuyển object missCount thành mảng để sắp xếp từ cao xuống thấp
-            let sortable = [];
-            for (let qIndex in missCount) {
-                if(missCount[qIndex] > 0) {
-                    sortable.push({ question: parseInt(qIndex) + 1, misses: missCount[qIndex] });
-                }
-            }
-            sortable.sort((a, b) => b.misses - a.misses);
-            
-            if (sortable.length === 0) {
-                statsHtml = `<span style="color: #94a3b8;">Chưa có dữ liệu câu sai. Lớp đang làm rất tốt!</span>`;
-            } else {
-                // Lấy top 5 câu sai nhiều nhất
-                sortable.slice(0, 5).forEach(item => {
-                    statsHtml += `<div class="miss-item">Câu ${item.question}: <strong>${item.misses} HS sai</strong></div>`;
+            // Hàm xem chi tiết
+            window.view = (name) => {
+                const s = data[name];
+                let html = `<b>Học sinh: ${name}</b><table style="margin-top:10px;"><tr><th>Câu</th><th>Trò điền</th><th>Đáp án đúng</th></tr>`;
+                s.detailAnswers.forEach((a, i) => {
+                    html += `<tr><td>${i+1}</td><td>${a.sAns}</td><td style="color:green">${a.cAns}</td></tr>`;
                 });
-            }
-            document.getElementById("top-missed-content").innerHTML = statsHtml;
+                html += `</table>`;
+                document.getElementById("detailContent").innerHTML = html;
+            };
         });
     </script>
 </body>
