@@ -15,55 +15,46 @@
         th, td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
         th { background: var(--primary); color: white; font-size: 14px; }
         
-        .account-form { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        input { padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; }
+        input, select { padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; margin-right: 5px; }
         .btn-add { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
         
         .status-on { color: #10b981; font-weight: bold; }
         .status-off { color: #94a3b8; font-style: italic; }
+        .cheat-warning { color: #ef4444; font-weight: bold; background: #fee2e2; padding: 2px 6px; border-radius: 4px; }
 
-        .icon-v { color: #16a34a; font-weight: bold; }
-        .icon-x { color: #dc2626; font-weight: bold; }
-        
         .detail-view { background: #334155; padding: 20px; border-radius: 12px; display: none; margin-top: 20px; border-left: 5px solid #3b82f6; }
         .detail-table { background: #1e293b; color: white; }
         .detail-table td { color: white; border: 1px solid #475569; }
-        .del-res-btn { color: #f87171; background: none; border: 1px solid #f87171; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
-        
-        /* Hiệu ứng khi rê chuột vào ô thống kê */
-        .stats-cell:hover { background-color: #fee2e2; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="dashboard">
         <h2>🔑 QUẢN LÝ TÀI KHOẢN HỌC SINH</h2>
-        <div class="account-form">
+        <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap;">
             <input type="text" id="accUser" placeholder="Tên đăng nhập">
             <input type="text" id="accPass" placeholder="Mật khẩu">
-            <input type="text" id="accName" placeholder="Họ tên thật" style="width:200px;">
-            <button class="btn-add" onclick="createAcc()">TẠO TÀI KHOẢN</button>
+            <input type="text" id="accName" placeholder="Họ tên học sinh">
+            <button class="btn-add" onclick="createAcc()">+ TẠO TÀI KHOẢN</button>
         </div>
-        <div style="max-height: 250px; overflow-y: auto;">
+        <div style="max-height: 200px; overflow-y: auto;">
             <table>
-                <thead><tr><th>Tên đăng nhập</th><th>Mật khẩu</th><th>Họ và Tên</th><th>Hành động</th></tr></thead>
+                <thead><tr><th>User</th><th>Pass</th><th>Họ và Tên</th><th>Xoá TK</th></tr></thead>
                 <tbody id="accBody"></tbody>
             </table>
         </div>
     </div>
 
     <div class="dashboard">
-        <h2>📊 THỐNG KÊ TỈ LỆ SAI TỪNG CÂU</h2>
-        <table id="statsTable">
-            <thead><tr id="statsHead"></tr></thead>
-            <tbody id="statsBody"></tbody>
-        </table>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">* Bấm vào ô số lượng em sai để xem danh sách chi tiết.</p>
-    </div>
-
-    <div class="dashboard">
-        <h2>📝 MA TRẬN KẾT QUẢ & TRẠNG THÁI</h2>
+        <h2>📊 GIÁM SÁT THI THEO ĐỀ</h2>
+        <div style="margin-bottom: 20px; background: #334155; padding: 15px; border-radius: 8px;">
+            <label style="font-weight: bold;">Chọn đề thi để xem:</label>
+            <select id="filterExam" onchange="renderMatrix()">
+                <option value="">-- Đang cập nhật danh sách đề... --</option>
+            </select>
+        </div>
+        
         <div style="overflow-x: auto;">
             <table>
                 <thead id="hRow"></thead>
@@ -71,14 +62,20 @@
             </table>
         </div>
 
+        <h2 style="margin-top: 30px;">📉 THỐNG KÊ SỐ EM SAI</h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead><tr id="statsHead"></tr></thead>
+                <tbody id="statsBody"></tbody>
+            </table>
+        </div>
+
         <div class="detail-view" id="detailSection">
             <h3 id="detailTitle" style="color:#93c5fd; margin-top:0;"></h3>
-            <div id="detailContent">
-                <table class="detail-table">
-                    <thead><tr><th>Câu</th><th>Đáp án của học sinh</th><th>Đáp án chính xác</th></tr></thead>
-                    <tbody id="detailInnerBody"></tbody>
-                </table>
-            </div>
+            <table class="detail-table">
+                <thead><tr><th>Câu</th><th>Đề bài & Trò điền</th><th>Đáp án chuẩn</th></tr></thead>
+                <tbody id="detailContent"></tbody>
+            </table>
         </div>
     </div>
 
@@ -95,100 +92,113 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
         let sData = {};
-        let wrongStudentsMap = []; // Biến lưu danh sách học sinh sai từng câu
+        let masterExamList = new Set(); // Danh sách đề thi vĩnh viễn
 
+        // --- QUẢN LÝ TÀI KHOẢN ---
         window.createAcc = () => {
             const u = document.getElementById("accUser").value.trim().toLowerCase();
-            const p = document.getElementById("accPass").value.trim();
-            const n = document.getElementById("accName").value.trim();
-            if(u) set(ref(db, 'accounts/' + u), { password: p, fullName: n });
+            const p = document.getElementById("accPass").value;
+            const n = document.getElementById("accName").value;
+            if(u && p && n) set(ref(db, 'accounts/' + u), { password: p, fullName: n });
         };
-        window.delAcc = (u) => { if(confirm("Xoá tài khoản?")) remove(ref(db, 'accounts/' + u)); };
-        window.delRes = (n) => { if(confirm("Xoá bài làm?")) remove(ref(db, 'students/' + n)); };
 
         onValue(ref(db, 'accounts'), (s) => {
             let h = ""; const d = s.val();
-            if(d) Object.keys(d).forEach(u => h += `<tr><td>${u}</td><td>${d[u].password}</td><td>${d[u].fullName}</td><td><button class="btn-delete" onclick="delAcc('${u}')">Xoá</button></td></tr>`);
+            if(d) Object.keys(d).forEach(u => h += `<tr><td>${u}</td><td>${d[u].password}</td><td>${d[u].fullName}</td><td><button class="btn-delete" onclick="remove(ref(getDatabase(), 'accounts/${u}'))">Xoá</button></td></tr>`);
             document.getElementById("accBody").innerHTML = h;
         });
 
+        // --- CẬP NHẬT DỮ LIỆU & DROPDOWN ---
         onValue(ref(db, 'students'), (s) => {
-            sData = s.val(); if(!sData) return;
-            let maxQ = 0; Object.values(sData).forEach(st => { if(st.totalQ > maxQ) maxQ = st.totalQ; });
+            sData = s.val() || {};
+            const filter = document.getElementById("filterExam");
+            const currentSelected = filter.value;
             
-            // Khởi tạo lại bản đồ học sinh sai
-            wrongStudentsMap = Array.from({length: maxQ}, () => []);
-
-            let h = `<tr><th>Thí sinh</th><th>Hoạt động</th><th>Điểm</th>`;
-            for(let i=1; i<=maxQ; i++) h += `<th>C${i}</th>`;
-            h += `<th>Cảnh báo</th><th>Xoá</th></tr>`;
-            document.getElementById("hRow").innerHTML = h;
-
-            let b = "";
-            Object.keys(sData).forEach(name => {
-                const st = sData[name];
-                const online = st.status_online === "Trực tuyến" ? "<span class='status-on'>🟢 Online</span>" : "<span class='status-off'>🔴 Offline</span>";
-                const warning = st.cheats > 0 ? `<b style="color:red;">${st.cheats} lần</b>` : "-";
-                
-                b += `<tr><td style="color:blue; cursor:pointer; text-align:left;" onclick="viewDetail('${name}')">${name}</td><td>${online}</td><td><b>${st.score}</b></td>`;
-                const ans = st.detailAnswers || [];
-                for(let i=0; i<maxQ; i++) {
-                    if(i < ans.length) {
-                        const isCorrect = ans[i].earned >= 1;
-                        b += `<td style="color:${isCorrect?'green':'red'}">${isCorrect?'✔':'✘'}</td>`;
-                        if(!isCorrect) wrongStudentsMap[i].push(name);
-                    }
-                    else b += `<td>-</td>`;
-                }
-                b += `<td>${warning}</td><td><button class="del-res-btn" onclick="delRes('${name}')">Xoá</button></td></tr>`;
+            // Luôn quét qua TOÀN BỘ dữ liệu để tìm đề mới
+            Object.values(sData).forEach(st => { 
+                if(st.examName) masterExamList.add(st.examName); 
             });
-            document.getElementById("bRow").innerHTML = b;
-
-            // Cập nhật thống kê sai
-            let sh = ""; let sb = "";
-            for(let i=1; i<=maxQ; i++) sh += `<th>Câu ${i}</th>`;
-            for(let i=0; i<maxQ; i++) {
-                sb += `<td class="stats-cell" style="color:red; font-weight:bold;" onclick="viewWrongList(${i})">${wrongStudentsMap[i].length} em sai</td>`;
-            }
-            document.getElementById("statsHead").innerHTML = `<tr>${sh}</tr>`;
-            document.getElementById("statsBody").innerHTML = `<tr>${sb}</tr>`;
+            
+            // Cập nhật Dropdown nhưng không xóa đề cũ
+            let optionsHtml = "<option value=''>-- Chọn đề thi --</option>";
+            Array.from(masterExamList).sort().forEach(ex => {
+                optionsHtml += `<option value="${ex}">${ex}</option>`;
+            });
+            filter.innerHTML = optionsHtml;
+            if (currentSelected) filter.value = currentSelected;
+            
+            renderMatrix();
         });
 
-        // Xem chi tiết từng học sinh
-        window.viewDetail = (name) => {
-            const st = sData[name];
-            if(!st || !st.detailAnswers) return;
-            document.getElementById("detailSection").style.display = "block";
-            document.getElementById("detailTitle").innerText = `CHI TIẾT BÀI LÀM: ${name}`;
+        window.renderMatrix = () => {
+            const examVal = document.getElementById("filterExam").value;
+            const hRow = document.getElementById("hRow"), bRow = document.getElementById("bRow");
+            const sHead = document.getElementById("statsHead"), sBody = document.getElementById("statsBody");
             
-            let h = `<table class="detail-table"><thead><tr><th>Câu</th><th>Trò điền</th><th>Đáp án chuẩn</th></tr></thead><tbody>`;
-            st.detailAnswers.forEach((a, i) => h += `<tr><td>Câu ${i+1}</td><td>${a.sAns}</td><td style="color:green">${a.cAns}</td></tr>`);
-            h += `</tbody></table>`;
+            if(!examVal) {
+                bRow.innerHTML = "<tr><td colspan='10'>Thầy vui lòng chọn một đề thi.</td></tr>";
+                sHead.innerHTML = ""; sBody.innerHTML = "";
+                return;
+            }
+
+            let filteredNames = Object.keys(sData).filter(name => sData[name].examName === examVal);
             
-            document.getElementById("detailContent").innerHTML = h;
-            if(window.MathJax) MathJax.typesetPromise();
-            document.getElementById("detailSection").scrollIntoView({ behavior: 'smooth' });
+            // Lấy số câu hỏi thực tế của đề này
+            let maxQ = 0;
+            filteredNames.forEach(name => { if(sData[name].totalQ > maxQ) maxQ = sData[name].totalQ; });
+
+            // 1. Header Ma Trận
+            let h = `<tr><th>Học sinh</th><th>Trạng thái</th><th>Thoát tab</th><th>Điểm</th>`;
+            for(let i=1; i<=maxQ; i++) h += `<th>C${i}</th>`;
+            hRow.innerHTML = h + `<th>Xoá bài</th></tr>`;
+
+            // 2. Nội dung & Thống kê sai
+            let b = "";
+            let wrongCounts = new Array(maxQ).fill(0);
+
+            filteredNames.forEach(name => {
+                const st = sData[name];
+                const online = st.status_online === "Trực tuyến" ? "<span class='status-on'>🟢 Online</span>" : "🔴 Offline";
+                const cheats = st.cheats || 0;
+                
+                b += `<tr><td style="color:blue; cursor:pointer; text-align:left;" onclick="viewDetail('${name}')">${name}</td>
+                    <td>${online}</td><td><span class="${cheats>0?'cheat-warning':''}">${cheats} lần</span></td><td><b>${st.score || 0}</b></td>`;
+                
+                const ans = st.detailAnswers || [];
+                for(let i=0; i<maxQ; i++) {
+                    if(ans[i]) {
+                        if(ans[i].earned > 0) b += `<td style="color:green">✔</td>`;
+                        else { b += `<td style="color:red">✘</td>`; wrongCounts[i]++; }
+                    } else b += `<td style="color:#ccc">?</td>`;
+                }
+                b += `<td><button class="btn-delete" onclick="remove(ref(getDatabase(), 'students/${name}'))">Xoá bài</button></td></tr>`;
+            });
+            bRow.innerHTML = b;
+
+            // 3. Bảng Thống kê đầy đủ các câu
+            let sh = ""; let sb = "";
+            for(let i=1; i<=maxQ; i++) sh += `<th>Câu ${i}</th>`;
+            for(let i=0; i<maxQ; i++) sb += `<td style="color:red; font-weight:bold;">${wrongCounts[i]} em sai</td>`;
+            sHead.innerHTML = `<tr>${sh}</tr>`;
+            sBody.innerHTML = `<tr>${sb}</tr>`;
         };
 
-        // Xem danh sách học sinh sai một câu cụ thể
-        window.viewWrongList = (qIdx) => {
-            const names = wrongStudentsMap[qIdx];
+        window.viewDetail = (name) => {
+            const st = sData[name];
             document.getElementById("detailSection").style.display = "block";
-            document.getElementById("detailTitle").innerText = `DANH SÁCH HỌC SINH SAI CÂU ${qIdx + 1}`;
-            
+            document.getElementById("detailTitle").innerText = `CHI TIẾT: ${name} (${st.examName})`;
             let h = "";
-            if (names.length > 0) {
-                h = `<div style="text-align:left; padding:15px; color:white; background:#1e293b; border-radius:8px;">`;
-                h += `<p style="margin-bottom:10px; border-bottom:1px solid #475569; padding-bottom:5px;">Tổng cộng: <b>${names.length} học sinh</b></p>`;
-                h += `<ol style="padding-left:20px;">`;
-                names.forEach(n => h += `<li style="margin-bottom:5px;">${n}</li>`);
-                h += `</ol></div>`;
-            } else {
-                h = `<div style="padding:20px; text-align:center; color:#10b981; font-weight:bold;">Chúc mừng! Không có học sinh nào sai câu này.</div>`;
+            if(st.detailAnswers) {
+                st.detailAnswers.forEach((a, i) => {
+                    h += `<tr><td>Câu ${i+1}</td>
+                        <td style="text-align:left;">${a.qText || '...'}<br>👉 Trò chọn: <b>${a.sAns}</b></td>
+                        <td style="color:green; font-weight:bold;">${a.cAns}</td></tr>`;
+                });
             }
-            
             document.getElementById("detailContent").innerHTML = h;
+            if(window.MathJax) MathJax.typesetPromise();
             document.getElementById("detailSection").scrollIntoView({ behavior: 'smooth' });
         };
     </script>
