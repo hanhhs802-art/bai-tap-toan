@@ -8,33 +8,29 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --text: #0f172a; --border: #cbd5e1; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .container { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 700px; border-top: 6px solid var(--primary); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 750px; border-top: 6px solid var(--primary); margin-top: 20px; }
         h2 { margin-top: 0; color: var(--primary); font-size: 24px; }
         .form-group { margin-bottom: 20px; text-align: left; }
         label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; color: #475569; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
-        input[type="text"]:focus, input[type="password"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
+        input[type="text"], input[type="password"] { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         .btn-primary { background: var(--primary); color: white; border: none; padding: 14px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; margin-top: 10px; }
         .btn-primary:hover { background: var(--primary-hover); }
         
-        /* Quiz UI */
         .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; font-weight: bold; }
         .question-title { font-size: 18px; line-height: 1.6; margin-bottom: 25px; }
-        
-        /* Multiple Choice */
-        .mcq-option { display: block; width: 100%; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 16px; transition: 0.2s; }
-        .mcq-option:hover { border-color: #94a3b8; background: #f1f5f9; }
+        .mcq-option { display: block; width: 100%; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: pointer; text-align: left; font-size: 16px; }
         .mcq-option.selected { border-color: var(--primary); background: #eff6ff; font-weight: bold; }
-        
-        /* True/False */
         .tf-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .tf-table th, .tf-table td { border: 1px solid var(--border); padding: 12px; text-align: center; }
         .tf-table td.statement { text-align: left; width: 70%; }
-        .tf-radio { transform: scale(1.5); cursor: pointer; }
+        .short-answer-input { width: 100%; max-width: 300px; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); padding: 10px; }
 
-        /* Short Answer */
-        .short-answer-input { width: 100%; max-width: 300px; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); }
+        /* Review Section */
+        .review-box { text-align: left; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .correct-tag { color: #16a34a; font-weight: bold; }
+        .wrong-tag { color: #dc2626; font-weight: bold; }
+        .explanation-box { background: #dcfce7; border-left: 4px solid #16a34a; padding: 15px; margin-top: 15px; border-radius: 0 8px 8px 0; font-size: 15px; }
 
         #quiz-screen, #result-screen { display: none; }
     </style>
@@ -45,13 +41,12 @@
         <div id="login-screen" style="text-align: center;">
             <h2>LeHoang Education</h2>
             <p style="color: #64748b; margin-bottom: 30px;">Hệ thống kiểm tra năng lực môn Toán</p>
-            
             <div class="form-group">
                 <label>Họ và Tên học sinh</label>
                 <input type="text" id="studentName" placeholder="Ví dụ: Nguyễn Văn A">
             </div>
             <div class="form-group">
-                <label>Mã phòng thi (Mã code)</label>
+                <label>Mã phòng thi</label>
                 <input type="password" id="accessCode" placeholder="Nhập mã do giáo viên cung cấp">
             </div>
             <button class="btn-primary" onclick="startQuiz()">VÀO PHÒNG THI</button>
@@ -62,22 +57,21 @@
                 <span id="display-name" style="color: var(--primary);"></span>
                 <span id="question-count" style="background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></span>
             </div>
-            
             <div id="question-text" class="question-title"></div>
-            
             <div id="interactive-area" style="margin-bottom: 30px;"></div>
-            
             <button class="btn-primary" onclick="submitAnswer()" id="btn-next">CÂU TIẾP THEO ➔</button>
         </div>
 
         <div id="result-screen" style="text-align: center;">
             <h2 style="color: #16a34a; font-size: 32px;">✓ ĐÃ NỘP BÀI</h2>
             <p style="font-size: 18px; margin-top: 20px;">Học sinh: <strong id="result-name"></strong></p>
-            <div style="background: #f8fafc; border: 2px dashed #cbd5e1; padding: 30px; border-radius: 12px; margin: 30px 0;">
+            <div style="background: white; border: 2px dashed var(--primary); padding: 30px; border-radius: 12px; margin: 30px 0;">
                 <p style="margin: 0; color: #64748b; font-size: 16px;">Tổng điểm đạt được:</p>
                 <strong id="score-text" style="color: var(--primary); font-size: 48px;"></strong>
             </div>
-            <p style="color: #64748b; font-size: 14px;">Kết quả chi tiết đã được gửi về hệ thống của giáo viên.</p>
+            
+            <h3 style="text-align: left; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-top: 40px;">ĐÁP ÁN & LỜI GIẢI CHI TIẾT</h3>
+            <div id="review-area"></div>
         </div>
     </div>
 
@@ -85,68 +79,60 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // THẦY DÁN THÊM databaseURL CỦA THẦY VÀO ĐÂY NHÉ
         const firebaseConfig = {
             apiKey: "AIzaSyB79zEH0-xkYJ9mfxghaEDzNQowlhx0MXE",
             authDomain: "phamhunganhquiz.firebaseapp.com",
-            
-            // THẦY THÊM DÒNG NÀY VÀO VÀ DÁN ĐƯỜNG LINK CỦA THẦY NHÉ (Nhớ có dấu phẩy ở cuối):
             databaseURL: "https://phamhunganhquiz-default-rtdb.asia-southeast1.firebasedatabase.app",
-            
             projectId: "phamhunganhquiz",
             storageBucket: "phamhunganhquiz.firebasestorage.app",
             messagingSenderId: "948379693019",
-            appId: "1:948379693019:web:a9acf119254d237018c1fe",
-            measurementId: "G-WZLRBGPF4H"
+            appId: "1:948379693019:web:a9acf119254d237018c1fe"
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // ==========================================
-        // CÀI ĐẶT MÃ PHÒNG THI VÀ ĐỀ BÀI Ở ĐÂY
-        // ==========================================
-        const CORRECT_PASSCODE = "TOAN2026"; // Thầy có thể đổi mã code tại đây
+        const CORRECT_PASSCODE = "TOAN2026";
 
+        // ĐỀ BÀI CÓ THÊM TRƯỜNG "explanation" (Lời giải)
         const questions = [
-            // DẠNG 1: TRẮC NGHIỆM (mcq)
             { 
                 type: "mcq",
-                q: "PHẦN I. Câu trắc nghiệm nhiều phương án lựa chọn.<br><br>Tính đạo hàm của hàm số \\( y = e^{2x} \\).", 
+                q: "Tính đạo hàm của hàm số \\( y = e^{2x} \\).", 
                 a: ["A. \\( y' = e^{2x} \\)", "B. \\( y' = 2e^{2x} \\)", "C. \\( y' = \\frac{1}{2}e^{2x} \\)", "D. \\( y' = 2xe^{2x} \\)"], 
-                correct: 1 // Đáp án B
+                correct: 1,
+                explanation: "Sử dụng công thức đạo hàm hàm hợp: \\( (e^u)' = u' \\cdot e^u \\). Ở đây \\( u = 2x \\Rightarrow u' = 2 \\). Do đó \\( y' = 2e^{2x} \\). Chọn B."
             },
-            
-            // DẠNG 2: ĐÚNG/SAI (tf) - Giống cấu trúc đề 2025
             {
                 type: "tf",
-                q: "PHẦN II. Câu trắc nghiệm đúng sai.<br><br>Cho hàm số \\( y = x^3 - 3x + 2 \\). Các mệnh đề sau đúng hay sai?",
+                q: "Cho hàm số \\( y = x^3 - 3x + 2 \\). Mệnh đề sau đúng hay sai?",
                 statements: [
                     { text: "Hàm số đồng biến trên khoảng \\( (1; +\\infty) \\).", isTrue: true },
-                    { text: "Hàm số đạt cực đại tại \\( x = 1 \\).", isTrue: false },
-                    { text: "Đồ thị hàm số cắt trục tung tại điểm có tung độ bằng 2.", isTrue: true },
-                    { text: "Giá trị nhỏ nhất của hàm số trên đoạn \\( [0; 2] \\) bằng 0.", isTrue: true }
-                ]
+                    { text: "Hàm số đạt cực đại tại \\( x = 1 \\).", isTrue: false }
+                ],
+                explanation: "Ta có \\( y' = 3x^2 - 3 \\).<br>- Trên \\( (1; +\\infty) \\), \\( y' > 0 \\) nên hàm đồng biến (Đúng).<br>- \\( y' = 0 \\Leftrightarrow x = \\pm 1 \\). Lập BBT ta thấy hàm đạt cực đại tại \\( x = -1 \\), không phải \\( x = 1 \\) (Sai)."
             },
-
-            // DẠNG 3: TRẢ LỜI NGẮN (short)
             {
                 type: "short",
-                q: "PHẦN III. Câu trắc nghiệm trả lời ngắn.<br><br>Tìm giá trị lớn nhất của hàm số \\( f(x) = -x^2 + 4x + 1 \\).",
-                correct: "5" // Học sinh phải gõ đúng số 5
+                q: "Tìm giá trị lớn nhất của hàm số \\( f(x) = -x^2 + 4x + 1 \\).",
+                correct: "5",
+                explanation: "Hàm số bậc 2 có hệ số \\( a = -1 < 0 \\), bề lõm hướng xuống. Đỉnh parabol có hoành độ \\( x = -\\frac{b}{2a} = 2 \\). Giá trị lớn nhất là \\( f(2) = 5 \\)."
             }
         ];
 
         let currentQ = 0, score = 0, studentName = "", cheatCount = 0;
-        let selectedMcq = null; // Lưu đáp án trắc nghiệm tạm thời
+        let selectedMcq = null;
+        let studentHistory = []; // Mảng lưu lại Lịch sử đúng/sai từng câu để gửi cho Thầy
 
         window.startQuiz = () => {
             studentName = document.getElementById("studentName").value.trim();
             const code = document.getElementById("accessCode").value.trim();
-            
             if (!studentName) return alert("Em vui lòng nhập Họ và Tên!");
             if (code !== CORRECT_PASSCODE) return alert("Mã phòng thi không chính xác!");
             
             const studentRef = ref(db, 'students/' + studentName);
-            set(studentRef, { status: "Đang làm", question: 1, cheats: 0, score: 0 });
+            // Gửi thêm thông tin tổng số câu hỏi lên cho bảng của Thầy
+            set(studentRef, { status: "Đang làm", question: 1, cheats: 0, score: 0, totalQ: questions.length, answers: [] });
             onDisconnect(studentRef).update({ status: "Mất mạng/Thoát" });
 
             document.getElementById("login-screen").style.display = "none";
@@ -161,82 +147,74 @@
             document.getElementById("question-text").innerHTML = qData.q;
             
             let html = "";
-            
-            // Xây dựng giao diện dựa theo loại câu hỏi
             if (qData.type === "mcq") {
                 selectedMcq = null;
-                qData.a.forEach((ans, i) => {
-                    html += `<button class="mcq-option" id="mcq-${i}" onclick="selectMcq(${i})">${ans}</button>`;
-                });
-            } 
-            else if (qData.type === "tf") {
-                html += `<table class="tf-table">
-                            <tr><th>Phát biểu</th><th>Đúng</th><th>Sai</th></tr>`;
+                qData.a.forEach((ans, i) => html += `<button class="mcq-option" id="mcq-${i}" onclick="selectMcq(${i})">${ans}</button>`);
+            } else if (qData.type === "tf") {
+                html += `<table class="tf-table"><tr><th>Phát biểu</th><th>Đúng</th><th>Sai</th></tr>`;
                 qData.statements.forEach((stmt, i) => {
-                    html += `<tr>
-                                <td class="statement">${stmt.text}</td>
-                                <td><input type="radio" name="tf-${i}" value="true" class="tf-radio"></td>
-                                <td><input type="radio" name="tf-${i}" value="false" class="tf-radio"></td>
-                             </tr>`;
+                    html += `<tr><td class="statement">${stmt.text}</td>
+                             <td><input type="radio" name="tf-${i}" value="true" class="tf-radio"></td>
+                             <td><input type="radio" name="tf-${i}" value="false" class="tf-radio"></td></tr>`;
                 });
                 html += `</table>`;
-            } 
-            else if (qData.type === "short") {
-                html += `<div style="text-align: center; margin-top: 20px;">
-                            <input type="text" id="short-answer" class="short-answer-input" placeholder="Nhập đáp án vào đây...">
-                         </div>`;
+            } else if (qData.type === "short") {
+                html += `<div style="text-align: center; margin-top: 20px;"><input type="text" id="short-answer" class="short-answer-input" placeholder="Nhập đáp án..."></div>`;
             }
 
             document.getElementById("interactive-area").innerHTML = html;
-            
             if (currentQ === questions.length - 1) {
                 document.getElementById("btn-next").innerText = "NỘP BÀI TỔNG KẾT";
-                document.getElementById("btn-next").style.backgroundColor = "#16a34a"; // Đổi màu xanh lá
+                document.getElementById("btn-next").style.backgroundColor = "#16a34a";
             }
-
             if (window.MathJax) MathJax.typesetPromise();
             update(ref(db, 'students/' + studentName), { question: currentQ + 1 });
         }
 
-        // Chọn đáp án cho câu Trắc nghiệm
         window.selectMcq = (index) => {
             selectedMcq = index;
             document.querySelectorAll('.mcq-option').forEach(btn => btn.classList.remove('selected'));
             document.getElementById(`mcq-${index}`).classList.add('selected');
         };
 
-        // Hàm xử lý khi bấm "CÂU TIẾP THEO"
         window.submitAnswer = () => {
             const qData = questions[currentQ];
             let isAnswered = false;
+            let earnedPoints = 0;
+            let status = 0; // 1 là đúng hoàn toàn, 0 là sai, 0.5 là đúng 1 phần
 
-            // Kiểm tra & Tính điểm
             if (qData.type === "mcq") {
                 if (selectedMcq === null) return alert("Em chưa chọn đáp án!");
-                if (selectedMcq === qData.correct) score++;
+                if (selectedMcq === qData.correct) { earnedPoints = 1; status = 1; }
                 isAnswered = true;
             } 
             else if (qData.type === "tf") {
                 let allChecked = true;
-                let tfScore = 0;
+                let correctParts = 0;
                 qData.statements.forEach((stmt, i) => {
                     const checkedNode = document.querySelector(`input[name="tf-${i}"]:checked`);
                     if (!checkedNode) allChecked = false;
-                    else if (checkedNode.value === stmt.isTrue.toString()) tfScore += 0.25; // Mỗi ý đúng 0.25 điểm
+                    else if (checkedNode.value === stmt.isTrue.toString()) correctParts++;
                 });
-                if (!allChecked) return alert("Em phải chọn Đúng hoặc Sai cho TẤT CẢ các phát biểu!");
-                score += tfScore;
+                if (!allChecked) return alert("Em phải chọn Đúng/Sai cho TẤT CẢ các phát biểu!");
+                
+                earnedPoints = correctParts * 0.25;
+                if (correctParts === qData.statements.length) status = 1;
+                else if (correctParts > 0) status = 0.5; // Đúng 1 phần
                 isAnswered = true;
             } 
             else if (qData.type === "short") {
                 const studentAns = document.getElementById("short-answer").value.trim().toLowerCase();
                 if (studentAns === "") return alert("Em chưa nhập đáp án!");
-                // So sánh chuỗi (có thể nhập 5 hoặc 5.0 tuỳ cấu hình của thầy)
-                if (studentAns === qData.correct.toLowerCase()) score++; 
+                if (studentAns === qData.correct.toLowerCase()) { earnedPoints = 1; status = 1; }
                 isAnswered = true;
             }
 
             if (isAnswered) {
+                score += earnedPoints;
+                studentHistory.push(status); // Lưu 1 (đúng), 0 (sai) vào mảng
+                update(ref(db, 'students/' + studentName), { score: score, answers: studentHistory });
+                
                 currentQ++;
                 if (currentQ < questions.length) renderQuestion();
                 else finishQuiz();
@@ -244,23 +222,38 @@
         };
 
         function finishQuiz() {
-            update(ref(db, 'students/' + studentName), { status: "Hoàn thành", score: score });
+            update(ref(db, 'students/' + studentName), { status: "Hoàn thành" });
             document.getElementById("quiz-screen").style.display = "none";
             document.getElementById("result-screen").style.display = "block";
             document.getElementById("result-name").innerText = studentName;
             document.getElementById("score-text").innerText = score;
+            
+            // XIN LỜI GIẢI CHI TIẾT
+            let reviewHtml = "";
+            questions.forEach((q, index) => {
+                let st = studentHistory[index];
+                let tag = st === 1 ? `<span class="correct-tag">✔ Làm đúng</span>` : (st === 0 ? `<span class="wrong-tag">✘ Làm sai</span>` : `<span style="color:#d97706">O Đúng 1 phần</span>`);
+                
+                reviewHtml += `
+                <div class="review-box">
+                    <p><strong>Câu ${index + 1}:</strong> ${q.q}</p>
+                    <p>Kết quả của em: ${tag}</p>
+                    <div class="explanation-box">
+                        <strong>📖 Hướng dẫn giải:</strong><br>
+                        ${q.explanation}
+                    </div>
+                </div>`;
+            });
+            document.getElementById("review-area").innerHTML = reviewHtml;
+            if (window.MathJax) MathJax.typesetPromise(); // Render lại Toán cho lời giải
         }
 
-        // CHỐNG GIAN LẬN
         document.addEventListener("visibilitychange", () => {
             if (document.hidden && studentName && document.getElementById("quiz-screen").style.display === "block") {
                 cheatCount++;
                 update(ref(db, 'students/' + studentName), { cheats: cheatCount });
                 alert(`CẢNH BÁO: Em vừa thoát màn hình! Vi phạm: ${cheatCount}/3 lần`);
-                if(cheatCount >= 3) {
-                    alert("Vi phạm 3 lần. Hệ thống tự động thu bài!");
-                    finishQuiz();
-                }
+                if(cheatCount >= 3) { finishQuiz(); }
             }
         });
     </script>
