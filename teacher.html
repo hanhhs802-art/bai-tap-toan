@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>BẢNG ĐIỀU KHIỂN CỦA THẦY HÙNG ANH</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1e293b; color: white; }
+        h1 { color: #60a5fa; }
+        table { width: 100%; border-collapse: collapse; background: white; color: black; margin-top: 20px; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 15px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+        th { background: #2563eb; color: white; }
+        .warning { color: #dc2626; font-weight: bold; background-color: #fee2e2; }
+        .online { color: #16a34a; font-weight: bold; }
+        .done { color: #475569; font-style: italic; }
+        #stats { margin-bottom: 15px; font-size: 14px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <h1>📋 DANH SÁCH HỌC SINH ĐANG LÀM BÀI</h1>
+    <div id="stats">Đang kết nối tới máy chủ...</div>
+    <table id="studentTable">
+        <thead>
+            <tr>
+                <th>Tên Học Sinh</th>
+                <th>Trạng Thái</th>
+                <th>Đang ở câu</th>
+                <th>Số lần chuyển tab (Vi phạm)</th>
+                <th>Điểm số</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // EM CŨNG ĐÃ ĐIỀN SẴN THÔNG TIN VÀO ĐÂY CHO THẦY RỒI
+        const firebaseConfig = {
+            apiKey: "AIzaSyB79zEH0-xkYJ9mfxghaEDzNQowlhx0MXE",
+            authDomain: "phamhunganhquiz.firebaseapp.com",
+            projectId: "phamhunganhquiz",
+            storageBucket: "phamhunganhquiz.firebasestorage.app",
+            messagingSenderId: "948379693019",
+            appId: "1:948379693019:web:a9acf119254d237018c1fe",
+            measurementId: "G-WZLRBGPF4H"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Lắng nghe dữ liệu theo thời gian thực
+        onValue(ref(db, 'students'), (snapshot) => {
+            const data = snapshot.val();
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = "";
+            document.getElementById("stats").innerText = `Cập nhật trực tiếp lúc: ${new Date().toLocaleTimeString()} - Đang có kết nối!`;
+            
+            if (!data) {
+                tbody.innerHTML = "<tr><td colspan='5'>Chưa có học sinh nào vào thi...</td></tr>";
+                return;
+            }
+
+            Object.keys(data).forEach(name => {
+                const info = data[name];
+                let statusClass = info.status === 'Đang làm' ? 'online' : (info.status === 'Hoàn thành' ? 'done' : '');
+                let cheatClass = info.cheats > 0 ? 'warning' : '';
+                
+                const row = `<tr>
+                    <td style="font-weight: bold;">${name}</td>
+                    <td class="${statusClass}">${info.status}</td>
+                    <td>${info.status === 'Hoàn thành' ? '-' : info.question}</td>
+                    <td class="${cheatClass}">${info.cheats}</td>
+                    <td style="font-weight: bold; color: #2563eb;">${info.score || 'Đang thi'}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        });
+    </script>
+</body>
+</html>

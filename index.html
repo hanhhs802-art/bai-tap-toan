@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài Tập Toán - Thầy Hùng Anh</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #eff6ff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 90%; max-width: 600px; text-align: center; border-top: 5px solid #2563eb; }
+        button { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; text-align: left; font-size: 16px; transition: 0.2s; }
+        button:hover { background: #dbeafe; border-color: #3b82f6; }
+        .btn-primary { background: #2563eb; color: white; text-align: center; font-weight: bold; border: none; margin-top: 20px; }
+        .btn-primary:hover { background: #1d4ed8; }
+        input { width: 90%; padding: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; }
+        #quiz-screen, #result-screen { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="login-screen">
+            <h2 style="color: #1d4ed8; margin-bottom: 5px;">Bài Tập Toán - Thầy Hùng Anh</h2>
+            <p style="color: #64748b; font-weight: bold; margin-bottom: 20px;">Hệ thống giám sát thi trực tuyến</p>
+            <input type="text" id="studentName" placeholder="Nhập Họ và Tên của em...">
+            <button class="btn-primary" onclick="startQuiz()">Bắt đầu làm bài</button>
+        </div>
+
+        <div id="quiz-screen">
+            <div style="display: flex; justify-content: space-between; font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;">
+                <strong id="display-name"></strong>
+                <span id="question-count"></span>
+            </div>
+            <h3 id="question-text" style="text-align: left; color: #1e293b; line-height: 1.6;"></h3>
+            <div id="answers"></div>
+        </div>
+
+        <div id="result-screen">
+            <h2 style="color: #16a34a;">Đã nộp bài thành công!</h2>
+            <p>Học sinh: <strong id="result-name"></strong></p>
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <strong id="score-text" style="color: #2563eb; font-size: 24px;"></strong>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // EM ĐÃ ĐIỀN SẴN THÔNG TIN TỪ ẢNH CỦA THẦY VÀO ĐÂY RỒI NHÉ
+        const firebaseConfig = {
+            apiKey: "AIzaSyB79zEH0-xkYJ9mfxghaEDzNQowlhx0MXE",
+            authDomain: "phamhunganhquiz.firebaseapp.com",
+            projectId: "phamhunganhquiz",
+            storageBucket: "phamhunganhquiz.firebasestorage.app",
+            messagingSenderId: "948379693019",
+            appId: "1:948379693019:web:a9acf119254d237018c1fe",
+            measurementId: "G-WZLRBGPF4H",
+            // Lưu ý: Nếu thầy tạo Database ở khu vực khác Mỹ, có thể cần thêm dòng databaseURL ở đây. Tạm thời cứ để thế này đã.
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Danh sách câu hỏi Toán (Thầy sửa ở đây)
+        const questions = [
+            { 
+                q: "Tính đạo hàm của hàm số \\( y = x^3 - 3x^2 + 2 \\).", 
+                a: ["A. \\( y' = 3x^2 - 6x + 2 \\)", "B. \\( y' = 3x^2 - 6x \\)", "C. \\( y' = x^2 - 6x \\)", "D. \\( y' = 3x^2 + 6x \\)"], 
+                correct: 1 
+            },
+            { 
+                q: "Tập nghiệm của phương trình \\( \\log_2(x-1) = 3 \\) là:", 
+                a: ["A. \\( S = \\{7\\} \\)", "B. \\( S = \\{8\\} \\)", "C. \\( S = \\{9\\} \\)", "D. \\( S = \\{10\\} \\)"], 
+                correct: 2 
+            }
+        ];
+
+        let currentQ = 0, score = 0, studentName = "", cheatCount = 0;
+
+        window.startQuiz = () => {
+            studentName = document.getElementById("studentName").value.trim();
+            if (!studentName) return alert("Nhập tên em ơi!");
+            
+            // Gửi dữ liệu ban đầu lên Firebase
+            const studentRef = ref(db, 'students/' + studentName);
+            set(studentRef, { status: "Đang làm", question: 1, cheats: 0, score: 0 });
+            
+            // Khi học sinh tắt trình duyệt, tự động báo
+            onDisconnect(studentRef).update({ status: "Đã thoát/Mất mạng" });
+
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("quiz-screen").style.display = "block";
+            document.getElementById("display-name").innerText = studentName;
+            showQuestion();
+        };
+
+        function showQuestion() {
+            document.getElementById("question-count").innerText = `Câu ${currentQ + 1}/${questions.length}`;
+            document.getElementById("question-text").innerHTML = questions[currentQ].q;
+            let html = "";
+            questions[currentQ].a.forEach((ans, i) => html += `<button onclick="checkAnswer(${i})">${ans}</button>`);
+            document.getElementById("answers").innerHTML = html;
+            if (window.MathJax) MathJax.typesetPromise();
+            
+            // Cập nhật câu đang làm lên bảng của thầy
+            update(ref(db, 'students/' + studentName), { question: currentQ + 1 });
+        }
+
+        window.checkAnswer = (i) => {
+            if (i === questions[currentQ].correct) score++;
+            currentQ++;
+            if (currentQ < questions.length) showQuestion();
+            else finishQuiz();
+        };
+
+        function finishQuiz() {
+            update(ref(db, 'students/' + studentName), { status: "Hoàn thành", score: `${score}/${questions.length}` });
+            document.getElementById("quiz-screen").style.display = "none";
+            document.getElementById("result-screen").style.display = "block";
+            document.getElementById("result-name").innerText = studentName;
+            document.getElementById("score-text").innerText = `Điểm của em: ${score}/${questions.length}`;
+        }
+
+        // CẢNH BÁO CHUYỂN TAB
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && studentName && document.getElementById("quiz-screen").style.display === "block") {
+                cheatCount++;
+                update(ref(db, 'students/' + studentName), { cheats: cheatCount });
+                alert(`CẢNH BÁO: Em vừa rời khỏi màn hình làm bài!\nSố lần vi phạm: ${cheatCount}`);
+                
+                if(cheatCount >= 3) {
+                    alert("Vi phạm 3 lần. Hệ thống tự động thu bài!");
+                    finishQuiz();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
