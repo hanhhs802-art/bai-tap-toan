@@ -35,7 +35,7 @@
             <p style="color:#64748b; margin-bottom:30px;">Hệ thống Học tập & Kiểm tra trực tuyến</p>
             <input type="text" id="loginUser" placeholder="Tên đăng nhập (Thầy giáo cấp)">
             <input type="password" id="loginPass" placeholder="Mật khẩu">
-            <button class="btn btn-blue" onclick="handleLogin()">ĐĂNG NHẬP</button>
+            <button class="btn btn-blue" id="btn-login" onclick="handleLogin()">ĐĂNG NHẬP</button>
         </div>
 
         <div id="screen-dashboard" class="screen" style="text-align: center;">
@@ -87,24 +87,26 @@
             projectId: "phamhunganhquiz",
             appId: "1:948379693019:web:a9acf119254d237018c1fe"
         };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        
+        let app, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+        } catch(e) {
+            alert("Lỗi khởi tạo Firebase: Hãy kiểm tra lại đoạn mã Config!");
+        }
 
-        // ================= ĐỀ THI CHÍNH THỨC =================
         const examQuestions = [
             { type: "mcq", q: "Đạo hàm của \\( y = e^{2x} \\) là:", a: ["e^{2x}", "2e^{2x}", "1/2e^{2x}", "2xe^{2x}"], correct: 1, explanation: "Dùng công thức (e^u)' = u'.e^u" },
             { type: "short", q: "Giá trị lớn nhất của \\( y = -x^2 + 4x + 1 \\):", correct: "5", explanation: "Đỉnh Parabol tại x=2, y=5" }
         ];
 
-        // ================= ĐỀ TỰ LUYỆN =================
         const practiceQuestions = [
             { type: "mcq", q: "Thể tích khối chóp có diện tích đáy B, cao h là:", a: ["Bh", "1/3Bh", "1/2Bh", "3Bh"], correct: 1, explanation: "V = 1/3.B.h" },
             { type: "tf", q: "Phương trình \\( \\sin x = 1 \\):", statements: [{text: "Có họ nghiệm x = π/2 + k2π", isTrue: true}, {text: "Vô nghiệm", isTrue: false}], explanation: "Sin x = 1 tại điểm cao nhất vòng tròn lượng giác." }
         ];
 
-        let currentUser = null; 
-        let currentMode = ""; // 'exam' hoặc 'practice'
-        let currentQList = []; // Danh sách câu hỏi đang dùng
+        let currentUser = null, currentMode = "", currentQList = [];
         let currentQ = 0, score = 0, selectedMcq = null, studentHistory = [];
 
         window.showScreen = (id) => {
@@ -112,26 +114,45 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // ĐĂNG NHẬP
+        // ĐĂNG NHẬP (ĐÃ THÊM BẪY LỖI)
         window.handleLogin = async () => {
-            const user = document.getElementById("loginUser").value.trim().toLowerCase();
-            const pass = document.getElementById("loginPass").value.trim();
-            if(!user || !pass) return alert("Vui lòng nhập đủ thông tin!");
+            const btn = document.getElementById("btn-login");
+            try {
+                const user = document.getElementById("loginUser").value.trim().toLowerCase();
+                const pass = document.getElementById("loginPass").value.trim();
+                if(!user || !pass) return alert("Vui lòng nhập đủ thông tin!");
 
-            const snap = await get(ref(db, 'accounts/' + user));
-            if(!snap.exists()) return alert("Tài khoản không tồn tại! Hãy hỏi lại Thầy giáo.");
-            
-            const data = snap.val();
-            if(data.password !== pass) return alert("Sai mật khẩu!");
+                btn.innerText = "ĐANG TẢI...";
+                btn.style.opacity = "0.7";
 
-            currentUser = { username: user, fullName: data.fullName };
-            document.getElementById("welcome-text").innerText = `Chào em, ${data.fullName}!`;
-            showScreen('screen-dashboard');
+                const snap = await get(ref(db, 'accounts/' + user));
+                
+                if(!snap.exists()) {
+                    btn.innerText = "ĐĂNG NHẬP"; btn.style.opacity = "1";
+                    return alert("Tài khoản không tồn tại! Thầy giáo chưa tạo tài khoản này.");
+                }
+                
+                const data = snap.val();
+                if(data.password !== pass) {
+                    btn.innerText = "ĐĂNG NHẬP"; btn.style.opacity = "1";
+                    return alert("Sai mật khẩu!");
+                }
+
+                currentUser = { username: user, fullName: data.fullName };
+                document.getElementById("welcome-text").innerText = `Chào em, ${data.fullName}!`;
+                showScreen('screen-dashboard');
+                
+                btn.innerText = "ĐĂNG NHẬP"; btn.style.opacity = "1";
+
+            } catch (error) {
+                btn.innerText = "ĐĂNG NHẬP"; btn.style.opacity = "1";
+                alert("Lỗi kết nối Firebase: " + error.message + "\n\n1. Kiểm tra lại kết nối mạng.\n2. Kiểm tra xem file thầy đã cập nhật lên GitHub chưa.");
+                console.error(error);
+            }
         };
 
         window.logout = () => { currentUser = null; showScreen('screen-login'); };
 
-        // BẮT ĐẦU CHẾ ĐỘ THI HOẶC LUYỆN
         window.startMode = async (mode) => {
             currentMode = mode;
             currentQList = mode === 'exam' ? examQuestions : practiceQuestions;
@@ -143,7 +164,6 @@
                 currentQ = 0; score = 0; studentHistory = [];
                 update(ref(db, `students/${currentUser.fullName}`), { status: "Đang làm", score: 0, totalQ: currentQList.length, detailAnswers: [] });
             } else {
-                // Tự luyện: Kiểm tra xem đang làm dở không
                 const snap = await get(ref(db, `practices_current/${currentUser.username}`));
                 if(snap.exists() && snap.val().currentQ < currentQList.length && confirm("Em có 1 bài tự luyện đang làm dở. Làm tiếp không?")) {
                     const data = snap.val();
@@ -203,4 +223,66 @@
                 sAnsText = sAnsArr.join("|"); cAnsText = cAnsArr.join("|");
             } else {
                 sAnsText = document.getElementById("short-ans").value.trim();
-                if
+                if(sAnsText === "") return alert("Nhập đáp án!");
+                cAnsText = q.correct;
+                if(sAnsText.toLowerCase() === q.correct.toLowerCase()) earned = 1;
+            }
+
+            score += earned;
+            studentHistory.push({ sAns: sAnsText, cAns: cAnsText, earned: earned });
+            currentQ++;
+
+            if(currentMode === 'exam') {
+                update(ref(db, `students/${currentUser.fullName}`), { score: score, detailAnswers: studentHistory });
+            } else {
+                update(ref(db, `practices_current/${currentUser.username}`), { currentQ: currentQ, score: score, detailAnswers: studentHistory });
+            }
+
+            if(currentQ < currentQList.length) renderQuestion();
+            else finishMode();
+        };
+
+        function finishMode() {
+            if(currentMode === 'exam') {
+                update(ref(db, `students/${currentUser.fullName}`), { status: "Hoàn thành" });
+            } else {
+                const dateStr = new Date().toLocaleString();
+                push(ref(db, `practices_history/${currentUser.username}`), { date: dateStr, score: score, total: currentQList.length });
+                set(ref(db, `practices_current/${currentUser.username}`), null);
+            }
+
+            document.getElementById("score-text").innerText = score;
+            let reviewHtml = "";
+            currentQList.forEach((q, i) => {
+                let color = studentHistory[i].earned >= 1 ? "green" : "red";
+                reviewHtml += `<div style="text-align:left; background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <p><b>Câu ${i+1}:</b> ${q.q}</p>
+                    <p>Em điền: <span style="color:${color};font-weight:bold;">${studentHistory[i].sAns}</span> (Đáp án: ${studentHistory[i].cAns})</p>
+                    <div style="background:#dcfce7; padding:10px; border-left:4px solid #16a34a;"><b>Giải:</b> ${q.explanation}</div>
+                </div>`;
+            });
+            document.getElementById("review-area").innerHTML = reviewHtml;
+            showScreen('screen-result');
+            if(window.MathJax) MathJax.typesetPromise();
+        }
+
+        window.viewHistory = async () => {
+            const snap = await get(ref(db, `practices_history/${currentUser.username}`));
+            let html = "";
+            if(!snap.exists()) {
+                html = "<p style='color:#64748b;'>Em chưa hoàn thành bài tự luyện nào cả.</p>";
+            } else {
+                const data = snap.val();
+                Object.values(data).forEach((item, index) => {
+                    html += `<div class="history-card">
+                        <b>Lần luyện tập ${index + 1}</b> - Thời gian: ${item.date} <br>
+                        <span style="color:var(--primary); font-size:20px; font-weight:bold;">Điểm: ${item.score}/${item.total}</span>
+                    </div>`;
+                });
+            }
+            document.getElementById("history-list").innerHTML = html;
+            showScreen('screen-history');
+        };
+    </script>
+</body>
+</html>
