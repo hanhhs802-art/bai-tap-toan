@@ -10,22 +10,16 @@
         body { font-family: Arial, sans-serif; padding: 20px; background: var(--bg); color: var(--text); margin: 0; }
         .dashboard { max-width: 1200px; margin: 0 auto 30px auto; background: var(--panel); padding: 25px; border-radius: 12px; border-top: 5px solid var(--primary); }
         h2 { color: #60a5fa; margin-top: 0; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        
         table { width: 100%; border-collapse: collapse; background: white; color: black; border-radius: 8px; overflow: hidden; margin-top: 15px; }
         th, td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
         th { background: var(--primary); color: white; font-size: 14px; }
-        
         input, select { padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; margin-right: 5px; }
         .btn-add { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        
         .status-on { color: #10b981; font-weight: bold; }
-        .status-off { color: #94a3b8; font-style: italic; }
         .cheat-warning { color: #ef4444; font-weight: bold; background: #fee2e2; padding: 2px 6px; border-radius: 4px; }
-
         .detail-view { background: #334155; padding: 20px; border-radius: 12px; display: none; margin-top: 20px; border-left: 5px solid #3b82f6; }
         .detail-table { background: #1e293b; color: white; }
-        .detail-table td { color: white; border: 1px solid #475569; }
     </style>
 </head>
 <body>
@@ -51,7 +45,7 @@
         <div style="margin-bottom: 20px; background: #334155; padding: 15px; border-radius: 8px;">
             <label style="font-weight: bold;">Chọn đề thi để xem:</label>
             <select id="filterExam" onchange="renderMatrix()">
-                <option value="">-- Đang cập nhật danh sách đề... --</option>
+                <option value="">-- Đang tải danh sách đề... --</option>
             </select>
         </div>
         
@@ -94,34 +88,55 @@
         const db = getDatabase(app);
         
         let sData = {};
-        let masterExamList = new Set(); // Danh sách đề thi vĩnh viễn
+        let masterExamList = new Set();
 
-        // --- QUẢN LÝ TÀI KHOẢN ---
+        // --- HÀM TẠO TÀI KHOẢN ---
         window.createAcc = () => {
             const u = document.getElementById("accUser").value.trim().toLowerCase();
             const p = document.getElementById("accPass").value;
             const n = document.getElementById("accName").value;
-            if(u && p && n) set(ref(db, 'accounts/' + u), { password: p, fullName: n });
+            if(u && p && n) {
+                set(ref(db, 'accounts/' + u), { password: p, fullName: n });
+                document.getElementById("accUser").value = "";
+                document.getElementById("accPass").value = "";
+                document.getElementById("accName").value = "";
+            } else alert("Thầy điền đủ 3 thông tin nhé!");
         };
 
+        // --- HÀM XOÁ TÀI KHOẢN ---
+        window.deleteAccount = (u) => {
+            if(confirm(`Thầy chắc chắn muốn xoá vĩnh viễn tài khoản [${u}]?`)) {
+                remove(ref(db, 'accounts/' + u));
+            }
+        };
+
+        // --- HÀM XOÁ BÀI LÀM ---
+        window.deleteResult = (name) => {
+            if(confirm(`Xoá bài làm của em [${name}]? (Lưu ý: Thao tác này không xoá tài khoản)`)) {
+                remove(ref(db, 'students/' + name));
+            }
+        };
+
+        // Lắng nghe danh sách tài khoản
         onValue(ref(db, 'accounts'), (s) => {
             let h = ""; const d = s.val();
-            if(d) Object.keys(d).forEach(u => h += `<tr><td>${u}</td><td>${d[u].password}</td><td>${d[u].fullName}</td><td><button class="btn-delete" onclick="remove(ref(getDatabase(), 'accounts/${u}'))">Xoá</button></td></tr>`);
-            document.getElementById("accBody").innerHTML = h;
+            if(d) {
+                Object.keys(d).forEach(u => {
+                    h += `<tr><td>${u}</td><td>${d[u].password}</td><td>${d[u].fullName}</td>
+                        <td><button class="btn-delete" onclick="deleteAccount('${u}')">Xoá</button></td></tr>`;
+                });
+            }
+            document.getElementById("accBody").innerHTML = h || "<tr><td colspan='4'>Chưa có tài khoản.</td></tr>";
         });
 
-        // --- CẬP NHẬT DỮ LIỆU & DROPDOWN ---
+        // Lắng nghe dữ liệu học sinh & Cập nhật ma trận
         onValue(ref(db, 'students'), (s) => {
             sData = s.val() || {};
             const filter = document.getElementById("filterExam");
             const currentSelected = filter.value;
             
-            // Luôn quét qua TOÀN BỘ dữ liệu để tìm đề mới
-            Object.values(sData).forEach(st => { 
-                if(st.examName) masterExamList.add(st.examName); 
-            });
+            Object.values(sData).forEach(st => { if(st.examName) masterExamList.add(st.examName); });
             
-            // Cập nhật Dropdown nhưng không xóa đề cũ
             let optionsHtml = "<option value=''>-- Chọn đề thi --</option>";
             Array.from(masterExamList).sort().forEach(ex => {
                 optionsHtml += `<option value="${ex}">${ex}</option>`;
@@ -138,23 +153,21 @@
             const sHead = document.getElementById("statsHead"), sBody = document.getElementById("statsBody");
             
             if(!examVal) {
-                bRow.innerHTML = "<tr><td colspan='10'>Thầy vui lòng chọn một đề thi.</td></tr>";
+                bRow.innerHTML = "<tr><td colspan='10'>Thầy chọn đề để xem ma trận kết quả.</td></tr>";
                 sHead.innerHTML = ""; sBody.innerHTML = "";
                 return;
             }
 
             let filteredNames = Object.keys(sData).filter(name => sData[name].examName === examVal);
-            
-            // Lấy số câu hỏi thực tế của đề này
             let maxQ = 0;
             filteredNames.forEach(name => { if(sData[name].totalQ > maxQ) maxQ = sData[name].totalQ; });
 
-            // 1. Header Ma Trận
+            // Vẽ Header
             let h = `<tr><th>Học sinh</th><th>Trạng thái</th><th>Thoát tab</th><th>Điểm</th>`;
             for(let i=1; i<=maxQ; i++) h += `<th>C${i}</th>`;
             hRow.innerHTML = h + `<th>Xoá bài</th></tr>`;
 
-            // 2. Nội dung & Thống kê sai
+            // Vẽ Body & Tính thống kê
             let b = "";
             let wrongCounts = new Array(maxQ).fill(0);
 
@@ -173,11 +186,11 @@
                         else { b += `<td style="color:red">✘</td>`; wrongCounts[i]++; }
                     } else b += `<td style="color:#ccc">?</td>`;
                 }
-                b += `<td><button class="btn-delete" onclick="remove(ref(getDatabase(), 'students/${name}'))">Xoá bài</button></td></tr>`;
+                b += `<td><button class="btn-delete" onclick="deleteResult('${name}')">Xoá</button></td></tr>`;
             });
             bRow.innerHTML = b;
 
-            // 3. Bảng Thống kê đầy đủ các câu
+            // Vẽ thống kê sai
             let sh = ""; let sb = "";
             for(let i=1; i<=maxQ; i++) sh += `<th>Câu ${i}</th>`;
             for(let i=0; i<maxQ; i++) sb += `<td style="color:red; font-weight:bold;">${wrongCounts[i]} em sai</td>`;
@@ -192,9 +205,10 @@
             let h = "";
             if(st.detailAnswers) {
                 st.detailAnswers.forEach((a, i) => {
+                    const studentChoice = (a.sAns === "Chưa điền đáp án" || a.sAns === "?") ? "<span style='color:red;'>Chưa điền</span>" : a.sAns;
                     h += `<tr><td>Câu ${i+1}</td>
-                        <td style="text-align:left;">${a.qText || '...'}<br>👉 Trò chọn: <b>${a.sAns}</b></td>
-                        <td style="color:green; font-weight:bold;">${a.cAns}</td></tr>`;
+                        <td style="text-align:left;">${a.qText || '...'}<br>👉 Trò chọn: <b>${studentChoice}</b></td>
+                        <td style="color:green; font-weight:bold;">${a.cAns || '---'}</td></tr>`;
                 });
             }
             document.getElementById("detailContent").innerHTML = h;
