@@ -30,6 +30,7 @@
         .mcq-option.selected { border-color: var(--primary); background: #eff6ff; font-weight: bold; box-shadow: 0 0 0 2px var(--primary); }
         .tf-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
         .tf-table th, .tf-table td { border: 1px solid var(--border); padding: 12px; text-align: center; }
+        .review-box { text-align: left; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 25px; margin-bottom: 20px; }
         .explanation-box { background: #dcfce7; border-left: 5px solid #16a34a; padding: 15px; margin-top: 15px; border-radius: 0 8px 8px 0; font-size: 15px; }
         .history-card { border: 1px solid var(--border); padding: 18px; border-radius: 10px; margin-bottom: 15px; background: white; display: flex; justify-content: space-between; align-items: center; }
     </style>
@@ -103,39 +104,39 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // KHO ĐỀ MẪU - Thầy thêm 'time' (số phút) cho mỗi đề
+        // KHO ĐỀ MẪU (Sửa lỗi công thức Toán)
         const allExams = {
             "Đề số 1": {
-        time: 35, // THÊM THỜI GIAN Ở ĐÂY (đơn vị là số phút)
+        time: 45, // THÊM THỜI GIAN Ở ĐÂY (đơn vị là số phút)
         questions: [
-                {"type":"mcq","q":"Câu 1. Tủ lạnh nhà bạn An có 20 hộp sữa và 15 cái bánh quy, trong đó có 12 hộp sữa có hương dâu và 8 hộp sữa sô cô la, 8 cái bánh quy hương sô cô la và 7 cái bánh quy hương dâu. Bạn An đang cần lựa 1 món bánh sô cô la và 1 hộp sữa dâu để ăn bữa chiều. Hỏi bạn An có bao nhiêu cách chọn?","a":["96","84","15","35"],"correct":1,"explanation":"Chọn 1 hộp sữa hương dâu có 12 cách. Chọn 1 bánh quy sô cô la có 8 cách. Theo quy tắc nhân, có \\( 12 \\times 8 = 96 \\) cách."},
-{"type":"mcq","q":"Câu 2. Từ thành phố A có 9 con đường đi đến thành phố B, từ thành phố A có 8 con đường đi đến thành phố C, từ thành phố B đến thành phố D có 5 con đường, từ thành phố C đến thành phố D có 10 con đường và không có con đường nào nối thành phố B với thành phố C. Hỏi có bao nhiêu cách đi từ thành phố A đến thành phố D?","a":["32","125","122","137"],"correct":2,"explanation":"TH1: Đi A -> B -> D có \\( 9 \\times 5 = 45 \\) cách. TH2: Đi A -> C -> D có \\( 8 \\times 10 = 80 \\) cách. Tổng có \\( 45 + 80 = 125 \\) cách."},
-{"type":"mcq","q":"Câu 3. Cho tập hợp \\( A = \\{1; 2; 4; 5; 7; 8\\} \\). Có bao nhiêu số tự nhiên gồm 4 chữ số được lập từ A sao cho các chữ số khác nhau từng đôi một?","a":["360","26","189","180"],"correct":1,"explanation":"Số các số tạo thành là chỉnh hợp chập 4 của 6 phần tử: \\( A_6^4 = 360 \\)."},
-{"type":"mcq","q":"Câu 4. Từ các số \\( 0; 1; 2; 3; 4; 5 \\) có thể lập được bao nhiêu số chẵn gồm 4 chữ số khác nhau?","a":["120","200","156","240"],"correct":3,"explanation":"Gọi số chẵn là \\( \\overline{abcd} \\). TH1: \\( d=0 \\) có 1 cách, \\( a,b,c \\) có \\( A_5^3 = 60 \\) cách. TH2: \\( d \\in \\{2, 4\\} \\) có 2 cách, \\( a \\neq 0 \\) có 4 cách, \\( b,c \\) có \\( A_4^2 = 12 \\) cách -> \\( 2 \\times 4 \\times 12 = 96 \\) cách. Tổng: \\( 60 + 96 = 156 \\) số."},
-{"type":"mcq","q":"Câu 5. Cho tập hợp \\( A=\\{0; 1; 2; 3; 4; 5; 6; 7\\} \\). Có bao nhiêu số tự nhiên gồm 4 chữ số được lập từ A sao cho các chữ số khác nhau từng đôi một và là số lẻ?","a":["720","1470","210","750"],"correct":1,"explanation":"Gọi số là \\( \\overline{abcd} \\). \\( d \\in \\{1, 3, 5, 7\\} \\) có 4 cách. \\( a \\neq 0 \\) có 6 cách. Chọn \\( b,c \\) có \\( A_6^2 = 30 \\) cách. Quy tắc nhân: \\( 4 \\times 6 \\times 30 = 720 \\)."},
-{"type":"mcq","q":"Câu 6. Có bao nhiêu số tự nhiên có 3 chữ số đôi một phân biệt và chia hết cho 5?","a":["136","128","256","1458"],"correct":1,"explanation":"Gọi số là \\( \\overline{abc} \\) với \\( c \\in \\{0, 5\\} \\). TH1: \\( c=0 \\) có \\( 1 \\times 9 \\times 8 = 72 \\) số. TH2: \\( c=5 \\) có \\( 1 \\times 8 \\times 8 = 64 \\) số. Tổng: \\( 72 + 64 = 136 \\)."},
-{"type":"mcq","q":"Câu 7. Một thùng trong đó có 19 hộp đựng bút màu đỏ, 15 hộp đựng bút màu xanh. Số cách khác nhau để chọn được đồng thời một hộp màu đỏ, một hộp màu xanh là:","a":["19","285","15","34"],"correct":2,"explanation":"Áp dụng quy tắc nhân: \\( 19 \\times 15 = 285 \\) cách."},
-{"type":"mcq","q":"Câu 8. Trong một tuần bạn A dự định mỗi ngày đi thăm một người bạn trong 12 người bạn của mình. Hỏi bạn A có thể lập được bao nhiêu kế hoạch đi thăm bạn của mình (thăm một bạn không quá một lần)?","a":["3991680","\\( 12! \\)","35831808","\\( 7! \\)"],"correct":1,"explanation":"Mỗi kế hoạch là một chỉnh hợp chập 7 của 12 phần tử: \\( A_{12}^7 = 3991680 \\)."},
-{"type":"mcq","q":"Câu 9. Nhãn mỗi chiếc ghế trong hội trường gồm hai phần: phần đầu là một chữ cái, phần thứ hai là một số nguyên dương nhỏ hơn 26. Hỏi có nhiều nhất bao nhiêu chiếc ghế được ghi nhãn khác nhau?","a":["624","48","600","26"],"correct":3,"explanation":"Chọn 1 chữ cái có 24 cách (theo bảng chữ cái tham chiếu). Chọn số nguyên dương nhỏ hơn 26 (từ 1 đến 25) có 25 cách. Tổng: \\( 24 \\times 25 = 600 \\) cách."},
-{"type":"mcq","q":"Câu 10. Biển số xe máy của tỉnh A có 6 kí tự, trong đó kí tự ở vị trí đầu tiên là một chữ cái, kí tự ở vị trí thứ hai là một chữ số thuộc tập \\( \\{1; 2; ...; 9\\} \\), mỗi kí tự ở bốn vị trí tiếp theo là một chữ số thuộc tập \\( \\{0; 1; 2; ...; 9\\} \\). Hỏi nếu chỉ dùng một mã số tỉnh thì tỉnh A có thể làm được nhiều nhất bao nhiêu biển số xe máy khác nhau?","a":["2340000","234000","75","2600000"],"correct":1,"explanation":"Chọn chữ cái có 26 cách. Chọn chữ số đầu có 9 cách. Bốn vị trí sau có \\( 10^4 \\) cách. Tổng: \\( 26 \\times 9 \\times 10^4 = 2340000 \\)."},
-{"type":"mcq","q":"Câu 11. Có 4 cặp vợ chồng được xếp ngồi trên một chiếc ghế dài có 8 chỗ. Biết rằng mỗi người vợ chỉ ngồi cạnh chồng của mình hoặc ngồi cạnh một người phụ nữ khác. Hỏi có bao nhiêu cách sắp xếp chỗ ngồi thỏa mãn?","a":["816","18","\\( 8! \\)","604"],"correct":1,"explanation":"Chia các trường hợp số cặp ngồi cạnh nhau (1 cặp, 2 cặp, 3 cặp, 4 cặp) và áp dụng nguyên lý bù trừ kết hợp hoán vị. Tổng số cách thỏa mãn là 816 cách."},
-{"type":"mcq","q":"Câu 12. Nếu một đa giác lồi có 44 đường chéo thì đa giác đó có bao nhiêu cạnh?","a":["8","10","9","11"],"correct":4,"explanation":"Số đường chéo của đa giác \\( n \\) cạnh là \\( \\frac{n(n-3)}{2} \\). Ta có \\( \\frac{n(n-3)}{2} = 44 \\Rightarrow n^2 - 3n - 88 = 0 \\Rightarrow n = 11 \\)."},
-{"type":"mcq","q":"Câu 13. Có 3 viên bi đen khác nhau, 4 viên bi đỏ khác nhau, 5 viên bi xanh khác nhau. Hỏi có bao nhiêu cách xếp các viên bi trên thành dãy sao cho các viên bi cùng màu ở cạnh nhau?","a":["345600","518400","725760","103680"],"correct":4,"explanation":"Hoán vị các bi cùng màu: \\( 3!, 4!, 5! \\). Hoán vị 3 nhóm màu với nhau: \\( 3! \\). Tổng: \\( 3! \\times 4! \\times 5! \\times 3! = 103680 \\)."},
-{"type":"mcq","q":"Câu 14. Một nhóm học sinh có 7 em nam và 3 em nữ. Hỏi có bao nhiêu cách xếp 10 em này trên một hàng ngang, sao cho hai vị trí đầu và cuối hàng là các em nam và không có 2 em nữ nào ngồi cạnh nhau?","a":["604800","344000","100800","120120"],"correct":1,"explanation":"Xếp 7 nam có \\( 7! \\) cách. 7 nam tạo ra 6 khoảng trống ở giữa (không tính 2 đầu vì bắt buộc là nam). Xếp 3 nữ vào 6 khoảng trống có \\( A_6^3 \\) cách. Tổng: \\( 7! \\times A_6^3 = 604800 \\)."},
-{"type":"mcq","q":"Câu 15. Sắp xếp năm bạn học sinh A, B, C, D, E vào một chiếc ghế dài có 5 chỗ ngồi. Số cách sắp xếp sao cho bạn A và bạn E luôn ngồi ở hai đầu ghế là:","a":["120","16","12","24"],"correct":3,"explanation":"Xếp A và E ở 2 đầu có \\( 2! \\) cách. Xếp B, C, D vào 3 vị trí giữa có \\( 3! \\) cách. Tổng: \\( 2! \\times 3! = 12 \\)."},
-{"type":"mcq","q":"Câu 16. Xếp ngẫu nhiên 5 lá phiếu có ghi số thứ tự từ 1 đến 5 cạnh nhau. Có bao nhiêu cách xếp để các phiếu ghi số chẵn luôn ở cạnh nhau?","a":["48","24","120","60"],"correct":1,"explanation":"Coi 2 số chẵn (2, 4) là 1 nhóm. Hoán vị trong nhóm: \\( 2! \\). Xếp nhóm này cùng 3 số lẻ (tổng 4 phần tử): \\( 4! \\). Số cách: \\( 2! \\times 4! = 48 \\)."},
-{"type":"mcq","q":"Câu 17. Cho 15 điểm trên cùng một mặt phẳng sao cho không có ba điểm nào thẳng hàng. Có bao nhiêu tam giác có cả ba đỉnh là 3 trong số 15 điểm đã cho?","a":["3375","2730","455","45"],"correct":3,"explanation":"Mỗi tam giác được tạo bởi 3 điểm phân biệt: \\( C_{15}^3 = 455 \\)."},
-{"type":"mcq","q":"Câu 18. Cho đa giác đều \\( n \\) đỉnh, \\( n \\in \\mathbb{N} \\) và \\( n \\ge 3 \\). Tìm \\( n \\) biết rằng đa giác đã cho có 170 đường chéo.","a":["\\( n=15 \\)","\\( n=27 \\)","\\( n=8 \\)","\\( n=20 \\)"],"correct":4,"explanation":"Áp dụng công thức đường chéo: \\( \\frac{n(n-3)}{2} = 170 \\Rightarrow n^2 - 3n - 340 = 0 \\Rightarrow n = 20 \\)."},
-{"type":"mcq","q":"Câu 19. Trong một giải đua xe đạp gồm 20 vận động viên, người ta chỉ quan tâm đến 3 vận động viên: vận động viên nhanh nhất, nhanh nhì và nhanh thứ ba. Hỏi có bao nhiêu kết quả có thể xảy ra?","a":["3420","2280","1140","6840"],"correct":4,"explanation":"Chọn và sắp thứ tự 3 người từ 20 vận động viên: \\( A_{20}^3 = 6840 \\)."},
-{"type":"mcq","q":"Câu 20. Câu lạc bộ Ghita có 16 thành viên. Số cách chọn một ban chấp hành bất kì gồm một trưởng ban, một phó ban, một thư kí và một thủ quỹ được chọn từ 16 thành viên là:","a":["4","\\( \\frac{16!}{4} \\)","\\( \\frac{16!}{12!4!} \\)","\\( \\frac{16!}{12!} \\)"],"correct":4,"explanation":"Chọn 4 vị trí có phân biệt chức vụ từ 16 người là một chỉnh hợp chập 4: \\( A_{16}^4 = \\frac{16!}{(16-4)!} = \\frac{16!}{12!} \\)."},
+                {"type":"mcq","q":"Câu 1. Tủ lạnh nhà bạn An có 20 hộp sữa và 15 cái bánh quy, trong đó có 12 hộp sữa có hương dâu và 8 hộp sữa sô cô la, 8 cái bánh quy hương sô cô la và 7 cái bánh quy hương dâu. Bạn An đang cần lựa 1 món bánh sô cô la và 1 hộp sữa dâu để ăn bữa chiều. Hỏi bạn An có bao nhiêu cách chọn?","a":["96","84","15","35"],"correct":0,"explanation":"Chọn 1 hộp sữa hương dâu có 12 cách. Chọn 1 bánh quy sô cô la có 8 cách. Theo quy tắc nhân, có \\( 12 \\times 8 = 96 \\) cách."},
+{"type":"mcq","q":"Câu 2. Từ thành phố A có 9 con đường đi đến thành phố B, từ thành phố A có 8 con đường đi đến thành phố C, từ thành phố B đến thành phố D có 5 con đường, từ thành phố C đến thành phố D có 10 con đường và không có con đường nào nối thành phố B với thành phố C. Hỏi có bao nhiêu cách đi từ thành phố A đến thành phố D?","a":["32","125","122","137"],"correct":1,"explanation":"TH1: Đi A -> B -> D có \\( 9 \\times 5 = 45 \\) cách. TH2: Đi A -> C -> D có \\( 8 \\times 10 = 80 \\) cách. Tổng có \\( 45 + 80 = 125 \\) cách."},
+{"type":"mcq","q":"Câu 3. Cho tập hợp \\( A = \\{1; 2; 4; 5; 7; 8\\} \\). Có bao nhiêu số tự nhiên gồm 4 chữ số được lập từ A sao cho các chữ số khác nhau từng đôi một?","a":["360","26","189","180"],"correct":0,"explanation":"Số các số tạo thành là chỉnh hợp chập 4 của 6 phần tử: \\( A_6^4 = 360 \\)."},
+{"type":"mcq","q":"Câu 4. Từ các số \\( 0; 1; 2; 3; 4; 5 \\) có thể lập được bao nhiêu số chẵn gồm 4 chữ số khác nhau?","a":["120","200","156","240"],"correct":2,"explanation":"Gọi số chẵn là \\( \\overline{abcd} \\). TH1: \\( d=0 \\) có 1 cách, \\( a,b,c \\) có \\( A_5^3 = 60 \\) cách. TH2: \\( d \\in \\{2, 4\\} \\) có 2 cách, \\( a \\neq 0 \\) có 4 cách, \\( b,c \\) có \\( A_4^2 = 12 \\) cách -> \\( 2 \\times 4 \\times 12 = 96 \\) cách. Tổng: \\( 60 + 96 = 156 \\) số."},
+{"type":"mcq","q":"Câu 5. Cho tập hợp \\( A=\\{0; 1; 2; 3; 4; 5; 6; 7\\} \\). Có bao nhiêu số tự nhiên gồm 4 chữ số được lập từ A sao cho các chữ số khác nhau từng đôi một và là số lẻ?","a":["720","1470","210","750"],"correct":0,"explanation":"Gọi số là \\( \\overline{abcd} \\). \\( d \\in \\{1, 3, 5, 7\\} \\) có 4 cách. \\( a \\neq 0 \\) có 6 cách. Chọn \\( b,c \\) có \\( A_6^2 = 30 \\) cách. Quy tắc nhân: \\( 4 \\times 6 \\times 30 = 720 \\)."},
+{"type":"mcq","q":"Câu 6. Có bao nhiêu số tự nhiên có 3 chữ số đôi một phân biệt và chia hết cho 5?","a":["136","128","256","1458"],"correct":0,"explanation":"Gọi số là \\( \\overline{abc} \\) với \\( c \\in \\{0, 5\\} \\). TH1: \\( c=0 \\) có \\( 1 \\times 9 \\times 8 = 72 \\) số. TH2: \\( c=5 \\) có \\( 1 \\times 8 \\times 8 = 64 \\) số. Tổng: \\( 72 + 64 = 136 \\)."},
+{"type":"mcq","q":"Câu 7. Một thùng trong đó có 19 hộp đựng bút màu đỏ, 15 hộp đựng bút màu xanh. Số cách khác nhau để chọn được đồng thời một hộp màu đỏ, một hộp màu xanh là:","a":["19","285","15","34"],"correct":1,"explanation":"Áp dụng quy tắc nhân: \\( 19 \\times 15 = 285 \\) cách."},
+{"type":"mcq","q":"Câu 8. Trong một tuần bạn A dự định mỗi ngày đi thăm một người bạn trong 12 người bạn của mình. Hỏi bạn A có thể lập được bao nhiêu kế hoạch đi thăm bạn của mình (thăm một bạn không quá một lần)?","a":["3991680","\\( 12! \\)","35831808","\\( 7! \\)"],"correct":0,"explanation":"Mỗi kế hoạch là một chỉnh hợp chập 7 của 12 phần tử: \\( A_{12}^7 = 3991680 \\)."},
+{"type":"mcq","q":"Câu 9. Nhãn mỗi chiếc ghế trong hội trường gồm hai phần: phần đầu là một chữ cái, phần thứ hai là một số nguyên dương nhỏ hơn 26. Hỏi có nhiều nhất bao nhiêu chiếc ghế được ghi nhãn khác nhau?","a":["624","48","600","26"],"correct":2,"explanation":"Chọn 1 chữ cái có 24 cách (theo bảng chữ cái tham chiếu). Chọn số nguyên dương nhỏ hơn 26 (từ 1 đến 25) có 25 cách. Tổng: \\( 24 \\times 25 = 600 \\) cách."},
+{"type":"mcq","q":"Câu 10. Biển số xe máy của tỉnh A có 6 kí tự, trong đó kí tự ở vị trí đầu tiên là một chữ cái, kí tự ở vị trí thứ hai là một chữ số thuộc tập \\( \\{1; 2; ...; 9\\} \\), mỗi kí tự ở bốn vị trí tiếp theo là một chữ số thuộc tập \\( \\{0; 1; 2; ...; 9\\} \\). Hỏi nếu chỉ dùng một mã số tỉnh thì tỉnh A có thể làm được nhiều nhất bao nhiêu biển số xe máy khác nhau?","a":["2340000","234000","75","2600000"],"correct":0,"explanation":"Chọn chữ cái có 26 cách. Chọn chữ số đầu có 9 cách. Bốn vị trí sau có \\( 10^4 \\) cách. Tổng: \\( 26 \\times 9 \\times 10^4 = 2340000 \\)."},
+{"type":"mcq","q":"Câu 11. Có 4 cặp vợ chồng được xếp ngồi trên một chiếc ghế dài có 8 chỗ. Biết rằng mỗi người vợ chỉ ngồi cạnh chồng của mình hoặc ngồi cạnh một người phụ nữ khác. Hỏi có bao nhiêu cách sắp xếp chỗ ngồi thỏa mãn?","a":["816","18","\\( 8! \\)","604"],"correct":0,"explanation":"Chia các trường hợp số cặp ngồi cạnh nhau (1 cặp, 2 cặp, 3 cặp, 4 cặp) và áp dụng nguyên lý bù trừ kết hợp hoán vị. Tổng số cách thỏa mãn là 816 cách."},
+{"type":"mcq","q":"Câu 12. Nếu một đa giác lồi có 44 đường chéo thì đa giác đó có bao nhiêu cạnh?","a":["8","10","9","11"],"correct":3,"explanation":"Số đường chéo của đa giác \\( n \\) cạnh là \\( \\frac{n(n-3)}{2} \\). Ta có \\( \\frac{n(n-3)}{2} = 44 \\Rightarrow n^2 - 3n - 88 = 0 \\Rightarrow n = 11 \\)."},
+{"type":"mcq","q":"Câu 13. Có 3 viên bi đen khác nhau, 4 viên bi đỏ khác nhau, 5 viên bi xanh khác nhau. Hỏi có bao nhiêu cách xếp các viên bi trên thành dãy sao cho các viên bi cùng màu ở cạnh nhau?","a":["345600","518400","725760","103680"],"correct":3,"explanation":"Hoán vị các bi cùng màu: \\( 3!, 4!, 5! \\). Hoán vị 3 nhóm màu với nhau: \\( 3! \\). Tổng: \\( 3! \\times 4! \\times 5! \\times 3! = 103680 \\)."},
+{"type":"mcq","q":"Câu 14. Một nhóm học sinh có 7 em nam và 3 em nữ. Hỏi có bao nhiêu cách xếp 10 em này trên một hàng ngang, sao cho hai vị trí đầu và cuối hàng là các em nam và không có 2 em nữ nào ngồi cạnh nhau?","a":["604800","344000","100800","120120"],"correct":0,"explanation":"Xếp 7 nam có \\( 7! \\) cách. 7 nam tạo ra 6 khoảng trống ở giữa (không tính 2 đầu vì bắt buộc là nam). Xếp 3 nữ vào 6 khoảng trống có \\( A_6^3 \\) cách. Tổng: \\( 7! \\times A_6^3 = 604800 \\)."},
+{"type":"mcq","q":"Câu 15. Sắp xếp năm bạn học sinh A, B, C, D, E vào một chiếc ghế dài có 5 chỗ ngồi. Số cách sắp xếp sao cho bạn A và bạn E luôn ngồi ở hai đầu ghế là:","a":["120","16","12","24"],"correct":2,"explanation":"Xếp A và E ở 2 đầu có \\( 2! \\) cách. Xếp B, C, D vào 3 vị trí giữa có \\( 3! \\) cách. Tổng: \\( 2! \\times 3! = 12 \\)."},
+{"type":"mcq","q":"Câu 16. Xếp ngẫu nhiên 5 lá phiếu có ghi số thứ tự từ 1 đến 5 cạnh nhau. Có bao nhiêu cách xếp để các phiếu ghi số chẵn luôn ở cạnh nhau?","a":["48","24","120","60"],"correct":0,"explanation":"Coi 2 số chẵn (2, 4) là 1 nhóm. Hoán vị trong nhóm: \\( 2! \\). Xếp nhóm này cùng 3 số lẻ (tổng 4 phần tử): \\( 4! \\). Số cách: \\( 2! \\times 4! = 48 \\)."},
+{"type":"mcq","q":"Câu 17. Cho 15 điểm trên cùng một mặt phẳng sao cho không có ba điểm nào thẳng hàng. Có bao nhiêu tam giác có cả ba đỉnh là 3 trong số 15 điểm đã cho?","a":["3375","2730","455","45"],"correct":2,"explanation":"Mỗi tam giác được tạo bởi 3 điểm phân biệt: \\( C_{15}^3 = 455 \\)."},
+{"type":"mcq","q":"Câu 18. Cho đa giác đều \\( n \\) đỉnh, \\( n \\in \\mathbb{N} \\) và \\( n \\ge 3 \\). Tìm \\( n \\) biết rằng đa giác đã cho có 170 đường chéo.","a":["\\( n=15 \\)","\\( n=27 \\)","\\( n=8 \\)","\\( n=20 \\)"],"correct":3,"explanation":"Áp dụng công thức đường chéo: \\( \\frac{n(n-3)}{2} = 170 \\Rightarrow n^2 - 3n - 340 = 0 \\Rightarrow n = 20 \\)."},
+{"type":"mcq","q":"Câu 19. Trong một giải đua xe đạp gồm 20 vận động viên, người ta chỉ quan tâm đến 3 vận động viên: vận động viên nhanh nhất, nhanh nhì và nhanh thứ ba. Hỏi có bao nhiêu kết quả có thể xảy ra?","a":["3420","2280","1140","6840"],"correct":3,"explanation":"Chọn và sắp thứ tự 3 người từ 20 vận động viên: \\( A_{20}^3 = 6840 \\)."},
+{"type":"mcq","q":"Câu 20. Câu lạc bộ Ghita có 16 thành viên. Số cách chọn một ban chấp hành bất kì gồm một trưởng ban, một phó ban, một thư kí và một thủ quỹ được chọn từ 16 thành viên là:","a":["4","\\( \\frac{16!}{4} \\)","\\( \\frac{16!}{12!4!} \\)","\\( \\frac{16!}{12!} \\)"],"correct":3,"explanation":"Chọn 4 vị trí có phân biệt chức vụ từ 16 người là một chỉnh hợp chập 4: \\( A_{16}^4 = \\frac{16!}{(16-4)!} = \\frac{16!}{12!} \\)."},
 {"type":"tf","q":"Câu 21. Có 5 nam sinh và 3 nữ sinh cần được xếp vào một hàng dọc. Các mệnh đề sau đúng hay sai?","statements":[{"text":"Có 40320 cách xếp tùy ý.","isTrue":true},{"text":"Có 720 cách xếp sao cho học sinh cùng giới đứng cạnh nhau.","isTrue":false},{"text":"Có 4320 cách xếp sao cho học sinh nữ luôn đứng cạnh nhau.","isTrue":true},{"text":"Có 2880 cách xếp sao cho học sinh nam luôn đứng cạnh nhau.","isTrue":true}],"explanation":"a) \\( 8! = 40320 \\). b) Sai, vì \\( 5! \\times 3! \\times 2! = 1440 \\). c) Coi 3 nữ là 1 khối, \\( 3! \\times 6! = 4320 \\). d) Coi 5 nam là 1 khối, \\( 5! \\times 4! = 2880 \\)."},
 {"type":"tf","q":"Câu 22. Một trường THPT X có 8 giáo viên Toán gồm có 3 nữ và 5 nam, giáo viên Vật lý thì có 4 giáo viên nam. Chọn ra một đoàn thanh tra công tác ôn thi tốt nghiệp THPT. Các mệnh đề sau đúng hay sai?","statements":[{"text":"Chọn 1 giáo viên nữ có \\( C_3^1 \\) cách.","isTrue":true},{"text":"Chọn 2 giáo viên nam môn Vật lý có \\( C_4^2 \\) cách.","isTrue":true},{"text":"Chọn 1 giáo viên nam môn Toán và 1 nam môn Vật lý có \\( C_5^1 + C_4^1 \\) cách.","isTrue":false},{"text":"Có 80 cách chọn ra một đoàn thanh tra gồm 3 người có đủ 2 môn Toán và Vật lý và phải có giáo viên nam và giáo viên nữ trong đoàn.","isTrue":false}],"explanation":"c) Sai vì phải dùng quy tắc nhân \\( C_5^1 \\times C_4^1 \\). d) Sai vì có 3 TH: (1 nữ Toán, 1 nam Toán, 1 nam Lý) + (1 nữ Toán, 2 nam Lý) + (2 nữ Toán, 1 nam Lý). Tổng là \\( 60 + 18 + 12 = 90 \\) cách."},
 {"type":"short","q":"Câu 23. Cho hai đường thẳng song song \\( d_1 \\) và \\( d_2 \\). Trên \\( d_1 \\) lấy 17 điểm phân biệt, trên \\( d_2 \\) lấy 20 điểm phân biệt. Tính số tam giác có các đỉnh là 3 điểm trong số 37 điểm đã chọn trên \\( d_1 \\) và \\( d_2 \\).","correct":"5950","explanation":"TH1: 1 điểm thuộc \\( d_1 \\) và 2 điểm thuộc \\( d_2 \\) có \\( C_{17}^1 \\times C_{20}^2 = 3230 \\). TH2: 2 điểm thuộc \\( d_1 \\) và 1 điểm thuộc \\( d_2 \\) có \\( C_{17}^2 \\times C_{20}^1 = 2720 \\). Tổng có \\( 3230 + 2720 = 5950 \\) tam giác."},
 {"type":"short","q":"Câu 24. Trong một tổ học sinh có 6 học sinh nữ và 10 học sinh nam. Hạnh là một trong 6 học sinh nữ, Huy là một trong 10 học sinh nam. Cô chủ nhiệm cần chọn ra 5 bạn trong tổ để tham gia hoạt động văn nghệ nhân ngày 20.11 sắp tới. Hỏi cô chủ nhiệm có bao nhiêu cách chọn trong đó có ít nhất 2 em Hạnh và Huy không được tham gia (tức là không đồng thời tham gia)?","correct":"4004","explanation":"Sử dụng phần bù. Số cách chọn ngẫu nhiên 5 bạn từ 16 bạn là \\( C_{16}^5 = 4368 \\). Số cách chọn 5 bạn mà có CẢ Hạnh và Huy là \\( 1 \\times C_{14}^3 = 364 \\). Vậy số cách chọn để Hạnh và Huy KHÔNG đồng thời tham gia là \\( 4368 - 364 = 4004 \\) cách."}
-            ]
+]
     },
             "Đề số 2": {
-        time: 35, // Đề này làm trong 45 phút
+        time: 45, // Đề này làm trong 45 phút
         questions: [
                 {"type":"mcq","q":"Câu 1. Có bao nhiêu cách chọn 1 bộ quần áo gồm 1 áo, 1 quần và 1 cà vạt từ 5 áo, 4 quần và 3 cà vạt?","a":["60","12","47","20"],"correct":0,"explanation":"Áp dụng quy tắc nhân: \\( 5 \\times 4 \\times 3 = 60 \\) cách."},
 {"type":"mcq","q":"Câu 2. Từ các chữ số 1, 2, 3, 4, 5, 6 có thể lập được bao nhiêu số tự nhiên chẵn có 3 chữ số (các chữ số có thể giống nhau)?","a":["108","120","216","18"],"correct":0,"explanation":"Gọi số cần tìm là \\( \\overline{abc} \\). \\( c \\in \\{2, 4, 6\\} \\) có 3 cách chọn. \\( a, b \\) mỗi vị trí có 6 cách chọn. Tổng số: \\( 6 \\times 6 \\times 3 = 108 \\) số."},
@@ -161,15 +162,32 @@
 {"type":"tf","q":"Câu 22. Một hộp có 5 viên bi xanh, 4 viên bi đỏ và 3 viên bi vàng (các viên bi đôi một khác nhau). Lấy ngẫu nhiên 3 viên bi. Các mệnh đề sau đúng hay sai?","statements":[{"text":"Số cách lấy 3 viên bi bất kỳ là \\( C_{12}^3 \\).","isTrue":true},{"text":"Số cách lấy 3 viên bi cùng màu là \\( C_5^3 + C_4^3 + C_3^3 \\).","isTrue":true},{"text":"Số cách lấy 3 viên bi có đủ 3 màu là \\( 5 + 4 + 3 \\).","isTrue":false},{"text":"Số cách lấy 3 viên bi không có bi vàng là \\( C_{12}^3 - C_3^3 \\).","isTrue":false}],"explanation":"c) Sai, phải dùng quy tắc nhân: \\( 5 \\times 4 \\times 3 = 60 \\) cách. d) Sai, số bi không phải vàng là \\( 5+4=9 \\) viên. Lấy 3 bi không vàng phải là \\( C_9^3 \\)."},
 {"type":"short","q":"Câu 23. Có bao nhiêu cách chia 8 đội bóng thành 4 bảng đấu, mỗi bảng gồm đúng 2 đội?","correct":"105","explanation":"Chia làm 4 bảng không phân biệt thứ tự bảng: \\( \\frac{C_8^2 \\times C_6^2 \\times C_4^2 \\times C_2^2}{4!} = \\frac{28 \\times 15 \\times 6 \\times 1}{24} = 105 \\) cách."},
 {"type":"short","q":"Câu 24. Lớp 11A có 35 học sinh, trong đó có 20 nam và 15 nữ. Có bao nhiêu cách chọn 5 bạn đi trực nhật sao cho số lượng nam nhiều hơn số lượng nữ?","correct":"207879","explanation":"Các trường hợp thỏa mãn (nam lớn hơn nữ): 3 nam 2 nữ (\\( C_{20}^3 \\times C_{15}^2 = 119700 \\)), 4 nam 1 nữ (\\( C_{20}^4 \\times C_{15}^1 = 72675 \\)), 5 nam 0 nữ (\\( C_{20}^5 = 15504 \\)). Tổng: \\( 119700 + 72675 + 15504 = 207879 \\) cách."}
-           ]
+]
     }
 };
 
-        let currentUser = null, currentMode = "", questions = [], currentIdx = 0, cheatCount = 0;
-        let userAnswers = {}; let timeLeft = 0; let timerInterval = null;
+        let currentUser = null, questions = [], currentIdx = 0, userAnswers = {}, timeLeft = 0, timerInterval = null, currentMode = "", cheatCount = 0;
+        let globalHistoryList = [];
 
         const picker = document.getElementById("examPicker");
-        Object.keys(allExams).forEach(name => { let opt = document.createElement("option"); opt.value = name; opt.innerText = name; picker.appendChild(opt); });
+        Object.keys(allExams).forEach(name => {
+            let opt = document.createElement("option"); opt.value = name; opt.innerText = name; picker.appendChild(opt);
+        });
+
+        // --- THEO DÕI THOÁT TAB (Chỉ hoạt động khi đang làm bài) ---
+        document.addEventListener("visibilitychange", () => {
+            const isQuizScreen = document.getElementById("screen-quiz").classList.contains("active");
+            if (document.hidden && currentMode === 'exam' && isQuizScreen) {
+                cheatCount++;
+                if (cheatCount >= 2) {
+                    alert("Em đã thoát tab 2 lần. Hệ thống tự động nộp bài!");
+                    finish(); 
+                } else {
+                    alert("CẢNH BÁO: Không được rời trang khi đang thi! Thoát tab lần nữa hệ thống sẽ tự nộp bài.");
+                    update(ref(db, `students/${currentUser.fullName}`), { cheats: cheatCount });
+                }
+            }
+        });
 
         window.showScreen = (id) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -184,34 +202,25 @@
             if(snap.exists() && snap.val().password === p) {
                 currentUser = { username: u, fullName: snap.val().fullName };
                 document.getElementById("welcome-text").innerText = `Chào em, ${currentUser.fullName}!`;
-                update(ref(db, 'students/' + currentUser.fullName), { status_online: "Trực tuyến" });
-                onDisconnect(ref(db, 'students/' + currentUser.fullName)).update({ status_online: "Ngoại tuyến" });
                 showScreen('screen-dashboard');
             } else alert("Sai thông tin đăng nhập!");
         };
 
         window.startMode = (mode) => {
             const examData = allExams[picker.value];
-            questions = examData.questions;
+            questions = examData.questions; currentMode = mode; currentIdx = 0; userAnswers = {}; cheatCount = 0; timeLeft = examData.time * 60;
             if(mode === 'exam' && prompt("Mã phòng thi:") !== "TOAN2026") return;
-            
-            currentMode = mode; currentIdx = 0; userAnswers = {}; cheatCount = 0;
-            timeLeft = examData.time * 60;
-
-            if(mode === 'exam') update(ref(db, `students/${currentUser.fullName}`), { examName: picker.value, totalQ: questions.length, status: "Đang làm", score: 0 });
-            
-            showScreen('screen-quiz');
-            renderQuestion(); renderGrid(); startTimer();
+            if(mode === 'exam') update(ref(db, `students/${currentUser.fullName}`), { examName: picker.value, totalQ: questions.length, status: "Đang làm", score: 0, cheats: 0 });
+            showScreen('screen-quiz'); renderQuestion(); renderGrid(); startTimer();
         };
 
         function startTimer() {
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 timeLeft--;
-                let m = Math.floor(timeLeft / 60);
-                let s = timeLeft % 60;
+                let m = Math.floor(timeLeft/60), s = timeLeft%60;
                 document.getElementById("timer").innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-                if(timeLeft <= 0) { clearInterval(timerInterval); alert("Hết giờ làm bài!"); finish(); }
+                if(timeLeft <= 0) { clearInterval(timerInterval); finish(); }
             }, 1000);
         }
 
@@ -239,7 +248,7 @@
                 q.statements.forEach((s, i) => html += `<tr><td style="text-align:left;">${s.text}</td><td><input type="radio" name="tf-${i}" value="true" ${savedAns && savedAns[i]==="true"?"checked":""} onchange="saveTF(${i}, 'true')"></td><td><input type="radio" name="tf-${i}" value="false" ${savedAns && savedAns[i]==="false"?"checked":""} onchange="saveTF(${i}, 'false')"></td></tr>`);
                 html += `</table>`;
             } else {
-                html = `<input type="text" id="short-ans" value="${savedAns||""}" style="text-align:center; font-weight:bold;" placeholder="Gõ đáp án..." oninput="saveShort(this.value)">`;
+                html = `<input type="text" value="${savedAns||""}" style="text-align:center; font-weight:bold;" oninput="saveShort(this.value)">`;
             }
             document.getElementById("interactive-area").innerHTML = html;
             if(window.MathJax) MathJax.typesetPromise();
@@ -251,60 +260,78 @@
 
         function sync() {
             if(currentMode !== 'exam') return;
-            let currentScore = 0; let details = [];
-            const cM = questions.filter(q => q.type === 'mcq').length || 1;
-            const cT = questions.filter(q => q.type === 'tf').length || 1;
-            const cS = questions.filter(q => q.type === 'short').length || 1;
+            let sc = 0; const cM = questions.filter(q => q.type === 'mcq').length || 1, cT = questions.filter(q => q.type === 'tf').length || 1, cS = questions.filter(q => q.type === 'short').length || 1;
             questions.forEach((q, i) => {
                 let e = 0; const u = userAnswers[i];
                 if(q.type==="mcq" && u===q.correct) e = 5/cM;
                 else if(q.type==="tf") { let cp=0; q.statements.forEach((st, si) => { if(u && u[si]===st.isTrue.toString()) cp++; }); e = (cp/q.statements.length)*(3/cT); }
                 else if(q.type==="short" && u && u.toLowerCase()===q.correct.toLowerCase()) e = 2/cS;
-                currentScore += e; details.push({ earned: e, sAns: u ? "X" : "Chưa điền" });
+                sc += e;
             });
-            update(ref(db, `students/${currentUser.fullName}`), { score: currentScore.toFixed(2), detailAnswers: details });
+            update(ref(db, `students/${currentUser.fullName}`), { score: sc.toFixed(2) });
         }
 
         window.changeQuestion = (s) => { let n = currentIdx + s; if(n>=0 && n<questions.length) { currentIdx = n; renderQuestion(); renderGrid(); } };
-        window.confirmFinish = () => { if(confirm("Em muốn nộp bài?")) finish(); };
+        window.confirmFinish = () => { if(confirm("Nộp bài?")) finish(); };
 
-        function finish() {
+        window.finish = () => {
             clearInterval(timerInterval);
-            let score = 0; let history = [];
-            const cM = questions.filter(q => q.type === 'mcq').length || 1;
-            const cT = questions.filter(q => q.type === 'tf').length || 1;
-            const cS = questions.filter(q => q.type === 'short').length || 1;
+            let sc = 0, historyArr = [];
+            const cM = questions.filter(q => q.type === 'mcq').length || 1, cT = questions.filter(q => q.type === 'tf').length || 1, cS = questions.filter(q => q.type === 'short').length || 1;
             questions.forEach((q, i) => {
-                let e = 0; let sA = "Chưa điền đáp án"; const u = userAnswers[i];
-                if(q.type==="mcq") { if(u!==undefined) { sA=q.a[u]; if(u===q.correct) e=5/cM; } }
-                else if(q.type==="tf") { let cp=0; let sa=[]; q.statements.forEach((st, si) => { const uv=u?u[si]:null; if(uv===st.isTrue.toString()) cp++; sa.push(uv? (uv==="true"?"Đ":"S") : "_"); }); e=(cp/q.statements.length)*(3/cT); if(u) sA=sa.join("|"); }
-                else { if(u) { sA=u; if(u.toLowerCase()===q.correct.toLowerCase()) e=2/cS; } }
-                score += e; history.push({ qText: q.q, sAns: sA, cAns: q.correctText || "Xem lời giải", earned: e, explanation: q.explanation });
+                let e = 0, sA = "Chưa làm", cA = ""; const u = userAnswers[i];
+                if(q.type==="mcq") { cA = q.a[q.correct]; if(u!==undefined) { sA=q.a[u]; if(u===q.correct) e=5/cM; } }
+                else if(q.type==="tf") { 
+                    let cp=0, sa=[], ca=[]; q.statements.forEach((st, si) => { const uv=u?u[si]:null; if(uv===st.isTrue.toString()) cp++; sa.push(uv?(uv==="true"?"Đ":"S"):"_"); ca.push(st.isTrue?"Đ":"S"); }); 
+                    e=(cp/q.statements.length)*(3/cT); cA=ca.join("|"); if(u) sA=sa.join("|"); 
+                } else { cA = q.correct; if(u) { sA=u; if(u.toLowerCase()===q.correct.toLowerCase()) e=2/cS; } }
+                sc += e; historyArr.push({ qText: q.q, sAns: sA, cAns: cA, earned: e, explanation: q.explanation });
             });
-            const fS = parseFloat(score.toFixed(2));
-            update(ref(db, `students/${currentUser.fullName}`), { status: "Xong", score: fS, detailAnswers: history });
-            push(ref(db, `history_all/${currentUser.username}`), { date: new Date().toLocaleString(), score: fS, details: history, examName: picker.value });
-            renderResult(history, fS); showScreen('screen-result');
+            const fS = parseFloat(sc.toFixed(2));
+            renderResultPage(historyArr, fS); 
+            showScreen('screen-result');
+            update(ref(db, `students/${currentUser.fullName}`), { status: "Xong", score: fS, detailAnswers: historyArr });
+            push(ref(db, `history_all/${currentUser.username}`), { date: new Date().toLocaleString(), score: fS, details: historyArr, examName: picker.value });
+            currentMode = ""; // Reset mode
         }
 
-        function renderResult(h, s) {
+        function renderResultPage(h, s) {
             document.getElementById("score-text").innerText = s;
-            let html = ""; h.forEach((item, i) => html += `<div class="review-box"><b>Câu ${i+1}:</b> ${item.qText}<br>Em chọn: <b style="color:${item.earned>0?'green':'red'}">${item.sAns}</b><div class="explanation-box">${item.explanation}</div></div>`);
+            let html = "";
+            h.forEach((item, i) => {
+                let tag = "";
+                if (item.sAns === "Chưa làm") tag = '<span style="color:gray; font-weight:bold;">(Chưa làm)</span>';
+                else if (item.earned > 0) tag = '<span style="color:green; font-weight:bold;">✔ Đúng</span>';
+                else tag = '<span style="color:red; font-weight:bold;">✘ Sai</span>';
+                
+                html += `<div class="review-box">
+                    <b>Câu ${i+1}:</b> ${item.qText} ${tag}<br>
+                    Em chọn: <b>${item.sAns}</b> | Đáp án đúng: <b>${item.cAns}</b>
+                    <div class="explanation-box"><b>📖 Lời giải:</b><br>${item.explanation}</div>
+                </div>`;
+            });
             document.getElementById("review-area").innerHTML = html;
             if(window.MathJax) MathJax.typesetPromise();
         }
 
         window.viewHistory = async () => {
             const snap = await get(ref(db, `history_all/${currentUser.username}`));
-            let h = ""; let list = [];
+            let h = ""; globalHistoryList = [];
             if(snap.exists()) {
                 const data = snap.val();
-                Object.keys(data).reverse().forEach(k => { list.push(data[k]); h += `<div class="history-card"><div>📅 ${data[k].date} [${data[k].examName}]<br><b>Điểm: ${data[k].score}</b></div><button class="btn btn-blue" style="width:auto; padding:8px 15px;" onclick="showH(${list.length-1})">Chi tiết</button></div>`; });
-                window.hList = list;
+                Object.keys(data).reverse().forEach(k => { 
+                    globalHistoryList.push(data[k]); 
+                    h += `<div class="history-card"><div>📅 ${data[k].date} [${data[k].examName}]<br><b>Điểm: ${data[k].score}</b></div><button class="btn btn-blue" style="width:auto; padding:8px 15px; margin:0;" onclick="showHDetail(${globalHistoryList.length-1})">Chi tiết</button></div>`; 
+                });
             }
             document.getElementById("history-content").innerHTML = h || "Trống"; showScreen('screen-history');
         };
-        window.showH = (i) => { let item = window.hList[i]; renderResult(item.details, item.score); showScreen('screen-result'); };
+
+        window.showHDetail = (i) => { 
+            let item = globalHistoryList[i]; 
+            renderResultPage(item.details, item.score); 
+            showScreen('screen-result'); 
+        };
     </script>
 </body>
 </html>
