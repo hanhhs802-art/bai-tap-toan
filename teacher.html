@@ -178,7 +178,7 @@
                     <td>${st.status || "Chưa bắt đầu"}</td>
                     <td style="${cheatClass}">${st.cheats || 0} lần</td>
                     <td style="font-size:18px;"><b>${st.score || 0}</b></td>
-                    <td><button class="btn-delete" onclick="if(confirm('Xoá kết quả này?')) remove(ref(getDatabase(),'students/${name}'))">Xoá bài</button></td>
+                    <td><button class="btn-delete" onclick="deleteResult('${name}')">Xoá bài</button></td>
                 </tr>`;
 
                 const answers = st.detailAnswers || [];
@@ -201,38 +201,93 @@
             document.getElementById("statsBody").innerHTML = statsHtml;
         };
 
-        window.viewStudentDetail = (name) => {
-            const st = studentData[name];
-            document.getElementById("detailSection").style.display = "block";
-            document.getElementById("detailTitle").innerText = "CHI TIẾT BÀI LÀM: " + name;
-            
-            let html = "<table><thead><tr><th>Câu</th><th>Kết quả</th><th>Học sinh chọn</th><th>Đáp án đúng</th></tr></thead><tbody>";
-            
-            if(st.detailAnswers) {
-                st.detailAnswers.forEach((item, i) => {
-                    let tag = "";
-                    if (item.sAns === "Chưa làm") tag = '<span class="tag-none">✘ (Bỏ trống)</span>';
-                    else if (item.earned > 0) tag = '<span class="tag-correct">✔ Đúng</span>';
-                    else tag = '<span class="tag-wrong">✘ Sai</span>';
+        window.viewStudentDetail = async (name) => {
+    window.currentViewingStudentName = name; 
+    const st = studentData[name];
+    document.getElementById("detailSection").style.display = "block";
+    document.getElementById("detailTitle").innerText = "CHI TIẾT BÀI LÀM: " + name;
 
-                    html += `<tr>
-                        <td><b>${i+1}</b></td>
-                        <td>${tag}</td>
-                        <td style="text-align:left;">${item.sAns}</td>
-                        <td style="color:green; font-weight:bold;">${item.cAns}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="4" style="background:#f8fafc; text-align:left; font-size:13px; color:#475569;">
-                            <b>Nội dung:</b> ${item.qText}<br>
-                            <b>Lời giải:</b> ${item.explanation || "Chưa có lời giải chi tiết."}
-                        </td>
-                    </tr>`;
-                });
-            }
-            html += "</tbody></table>";
-            document.getElementById("detailContent").innerHTML = html;
-            if(window.MathJax) MathJax.typesetPromise();
-        };
+    // 1. Bài làm hiện tại
+    let html = "<h3>📌 Bài làm hiện tại:</h3><table><thead><tr><th>Câu</th><th>Kết quả</th><th>Học sinh chọn</th><th>Đáp án đúng</th></tr></thead><tbody>";
+    if(st && st.detailAnswers) {
+        st.detailAnswers.forEach((item, i) => {
+            let tag = item.earned > 0 ? '<span class="tag-correct">✔ Đúng</span>' : (item.sAns === "Chưa làm" ? '<span class="tag-none">✘ (Bỏ trống)</span>' : '<span class="tag-wrong">✘ Sai</span>');
+            html += `<tr><td><b>${i+1}</b></td><td>${tag}</td><td>${item.sAns}</td><td style="color:green; font-weight:bold;">${item.cAns}</td></tr>`;
+        });
+    } else { html += "<tr><td colspan='4'>Trống.</td></tr>"; }
+    html += "</tbody></table>";
+
+    // 2. Lịch sử bài làm
+    const accSnap = await get(ref(db, 'accounts'));
+    let username = "";
+    if(accSnap.exists()){
+        const accs = accSnap.val();
+        username = Object.keys(accs).find(u => accs[u].fullName === name);
+    }
+
+    // Tiêu đề Lịch sử kèm nút XOÁ TẤT CẢ
+    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-top:30px;">
+                <h3 style="color:#f59e0b; margin:0;">🕒 Lịch sử bài làm cũ:</h3>
+                ${username ? `<button class="btn-delete" style="background:#ef4444; font-size:12px;" onclick="deleteAllHistory('${username}')">💥 XOÁ HẾT LỊCH SỬ</button>` : ""}
+             </div>`;
+    
+    if(username) {
+        const histSnap = await get(ref(db, `history_all/${username}`));
+        if(histSnap.exists()){
+            const histData = histSnap.val();
+            Object.keys(histData).reverse().forEach(key => {
+                const h = histData[key];
+                html += `<div style="background:#334155; padding:10px; border-radius:8px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>📅 ${h.date} - <b>${h.examName}</b> - Điểm: <b style="color:#60a5fa">${h.score}</b></span>
+                    <button class="btn-delete" style="padding:5px 8px; font-size:11px;" onclick="deleteHistoryEntry('${username}', '${key}')">Xoá mục này</button>
+                </div>`;
+            });
+        } else { html += "<p>Chưa có lịch sử.</p>"; }
+    }
+
+    document.getElementById("detailContent").innerHTML = html;
+    if(window.MathJax) MathJax.typesetPromise();
+};
+        // Dán thêm đoạn này vào trong phần script module
+window.deleteResult = (name) => {
+    if (confirm(`Thầy có chắc chắn muốn xoá kết quả của học sinh ${name} không?`)) {
+        // Lưu ý: db và ref đã được thầy import ở đầu script rồi nên dùng luôn
+        const studentRef = ref(db, 'students/' + name);
+        remove(studentRef)
+            .then(() => {
+                alert("Đã xoá bài làm thành công!");
+                renderMonitoring(); // Gọi lại hàm này để bảng biến mất dòng vừa xoá
+            })
+            .catch((error) => {
+                alert("Lỗi: " + error.message);
+            });
+    }
+};
+// Hàm xoá 1 mục lịch sử cụ thể
+window.deleteHistoryEntry = (username, historyKey) => {
+    if (confirm("Thầy có chắc chắn muốn xoá bản ghi lịch sử này không?")) {
+        const historyRef = ref(db, `history_all/${username}/${historyKey}`);
+        remove(historyRef)
+            .then(() => {
+                alert("Đã xoá lịch sử thành công!");
+                // Sau khi xoá xong, gọi lại hàm xem chi tiết để cập nhật lại danh sách
+                viewStudentDetail(window.currentViewingStudentName); 
+            })
+            .catch((err) => alert("Lỗi: " + err.message));
+    }
+};
+// Hàm xoá TOÀN BỘ lịch sử của 1 học sinh
+window.deleteAllHistory = (username) => {
+    if (confirm("CẢNH BÁO: Thầy có chắc chắn muốn xoá VĨNH VIỄN TOÀN BỘ lịch sử bài làm của học sinh này không?")) {
+        const allHistoryRef = ref(db, `history_all/${username}`);
+        remove(allHistoryRef)
+            .then(() => {
+                alert("Đã xoá sạch toàn bộ lịch sử!");
+                viewStudentDetail(window.currentViewingStudentName); // Tải lại bảng để cập nhật
+            })
+            .catch((err) => alert("Lỗi: " + err.message));
+    }
+};
     </script>
 </body>
 </html>
